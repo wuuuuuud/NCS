@@ -24,12 +24,16 @@ from google.appengine.api import users
 import datamodel
 from datamodel import *
 
-def addBook(_bookname,owner,_author):
-    userkey=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+owner+"' LIMIT 1")
-    newbook=CS_Book(bookname=_bookname,author=_author)
-    newbook.put()
-    newrelation=CS_BookUser(bookKey=str(newbook.key()),userKey=str(userkey[0]))
-    newrelation.put()
+def addBook(_bookname,_owner,_author):
+    userkey=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_owner+"' LIMIT 1").get()
+    if (userkey):
+        newbook=CS_Book(bookname=_bookname,author=_author)
+        newbook.put()
+        newrelation=CS_BookUser(bookKey=str(newbook.key()),userKey=str(userkey))
+        newrelation.put()
+        return "success!"
+    else:
+        return "no such user!"
 
 
 
@@ -47,26 +51,35 @@ class NewUserHandler(webapp2.RequestHandler):
 
 class CheckUsersHandler(webapp2.RequestHandler):
     def get (self):
-        result=db.GqlQuery("SELECT * FROM CS_Users")
+        result=db.GqlQuery("SELECT * FROM CS_User")
         self.response.write(u"中文支持测试，堃")
         for p in result:
             self.response.write(p.username)
 
 class ResetDataStoreHandler(webapp2.RequestHandler):
     def get(self):
-        if request.GET['passkey']=='asdfghjkl':
+        if self.request.get('passkey')=='asdfghjkl':
             db.delete(CS_User.all())
             db.delete(CS_Book.all())
             db.delete(CS_BookUser.all())
 
 class AddBookHandler(webapp2.RequestHandler):
     def get(self):
-        addBook(self.request.get('bookname'),'wtxqgg',self.request.get('author'))
-        self.response.write("!");
+        result=addBook(self.request.get('bookname'),self.request.get('owner'),self.request.get('author'))
+        self.response.write(result);
+
+class ListBookHandler(webapp2.RequestHandler):
+    def get(self):
+        q=db.GqlQuery("SELECT * FROM CS_Book")
+        result=q.fetch(10)
+        for r in result:
+            self.response.write(r.bookname+r.author+str(r.key())+"<br/>")
+
 
 app = webapp2.WSGIApplication([
     ('/reset',ResetDataStoreHandler),
     ('/add/book/*',AddBookHandler),
+    ('/list/book*',ListBookHandler),
     ('/create/tao',NewUserHandler),
     ('/check/1',CheckUsersHandler),
     ('/test/',TestHandler),
