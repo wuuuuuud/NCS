@@ -23,6 +23,26 @@ from google.appengine.api import users
 
 import datamodel
 from datamodel import *
+from webapp2_extras import sessions
+
+class BaseHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        # Get a session store for this request.
+        self.session_store = sessions.get_store(request=self.request)
+
+        try:
+            # Dispatch the request.
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            # Save all sessions.
+            self.session_store.save_sessions(self.response)
+
+    @webapp2.cached_property
+    def session(self):
+        # Returns a session using the default cookie key.
+        return self.session_store.get_session()
+
+
 
 def addBook(_bookname,_owner,_author):
     userkey=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_owner+"' LIMIT 1").get()
@@ -46,7 +66,7 @@ class TestHandler(webapp2.RequestHandler):
 
 class NewUserHandler(webapp2.RequestHandler):
     def get(self):
-        Tao=CS_User(id=1,username="wtxqgg",password="19921101",email="wtxqgg@gmail.com")
+        Tao=CS_User(username="wtxqgg",password="19921101",email="wtxqgg@gmail.com")
         Tao.put()
 
 class CheckUsersHandler(webapp2.RequestHandler):
@@ -75,13 +95,56 @@ class ListBookHandler(webapp2.RequestHandler):
         for r in result:
             self.response.write(r.bookname+r.author+str(r.key())+"<br/>")
 
+class ListSeriesHandler(webapp2.RequestHandler):
+    def get(self):
+        pass
+
+class RegisterUserHandler(BaseHandler):
+    def post(self):
+        _username=str(self.request.POST['username'])
+        _password=self.request.POST['password']
+        _email=self.request.POST['email']
+        assumeexist=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"'").get()
+        if (not assumeexist):
+            newuser=CS_User(username=_username,password=_password,email=_email)
+            newuser.put()
+            self.response.write('succeeded in register')
+        else:
+            self.response.write('username already exists!')
+
+class LoginHandler(BaseHandler):
+    def post(self):
+        _username=str(self.request.POST['username'])
+        _password=self.request.POST['password']
+        assumecorrect=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"' AND password='"+_password+"'").get()
+        if (assumecorrect):
+            self.session["loggedin"]="yes"
+            self.response.write("succeeded in login!")
+        else:
+            self.response.write("failed on login,please recheck your password or username!")
+
+class LoginTestHandler(BaseHandler):
+    def get(self):
+        if (self.session.get("loggedin")=="yes"):
+            self.response.write("you have logged in!")
+        else:
+            self.response.write("something wrong must have happened somewhere...")
+
+
+config = {}
+config['webapp2_extras.sessions'] = {
+    'secret_key': 'CounterTop',
+}
 
 app = webapp2.WSGIApplication([
     ('/reset',ResetDataStoreHandler),
     ('/add/book/*',AddBookHandler),
     ('/list/book*',ListBookHandler),
+    ('/register/user/*',RegisterUserHandler),
+    ('/login/user/*',LoginHandler),
+    ('/check/login*',LoginTestHandler),
     ('/create/tao',NewUserHandler),
     ('/check/1',CheckUsersHandler),
     ('/test/',TestHandler),
     ('/', MainHandler)
-], debug=True)
+], debug=True,config=config)
