@@ -9,3 +9,85 @@ indexes:
 # manually, move them above the marker line.  The index.yaml file is
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
+
+- kind: CS_BookUser
+  properties:
+  - name: bookKey
+  - name: userKey
+  - name: perview
+
+- kind: CS_BookUser
+  properties:
+  - name: bookKey
+  - name: userKey
+  - name: purview
+
+- kind: CS_Chapter
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Chapter
+  properties:
+  - name: parentKey
+  - name: order
+    direction: desc
+
+- kind: CS_Node
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Node
+  properties:
+  - name: parentKey
+  - name: order
+    direction: desc
+
+- kind: CS_Paragraph
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Part
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Part
+  properties:
+  - name: parentKey
+  - name: order
+    direction: desc
+
+- kind: CS_Series
+  properties:
+  - name: bookKey
+  - name: order
+
+- kind: CS_Series
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Series
+  properties:
+  - name: parentKey
+  - name: order
+    direction: desc
+
+- kind: CS_Volume
+  properties:
+  - name: parentKey
+  - name: order
+
+- kind: CS_Volume
+  properties:
+  - name: parentKey
+  - name: order
+    direction: desc
+
+- kind: CS_Volume
+  properties:
+  - name: seriesKey
+  - name: order

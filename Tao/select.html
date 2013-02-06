@@ -60,9 +60,9 @@
             contentDOM.addEventListener("mouseup", f, false);
             
             var plist=contentDOM.getElementsByTagName("P")
-            for(i=0;i<=plist.length-1;i++)
-            {
-            plist[i].addEventListener(DEBUG?"click":"mousemove",function (event)
+            
+            
+            $(content)[0].addEventListener(DEBUG?"click":"mousemove",function (event)
             {
                 globalEvent=event;
                 var eventY=event.clientY;
@@ -72,7 +72,7 @@
                 var t=event.target;
                 var r=document.createRange();
                 var s;
-                
+                if(t.nodeName=="DIV") return 1;
                 while(t.nodeName!="P")
                 {
                     t=t.parentNode;
@@ -307,7 +307,7 @@
             },false);
             }
             
-}
+
 
             window.addEventListener("load", ini, false);
             function treelize(object)

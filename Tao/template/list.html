@@ -1,0 +1,28 @@
+<div  id="list" class="content">
+	{% for r in list %}
+      <p> {{ namedescription}}名称：<a href="/list/{{childtype}}/{{ r.key() }}">{% if listtype=="book" %}{{ r.name }}{% else %}{{ r.name }}{% endif %}</a>{% if listtype=="book" %}&nbsp;作者： {{ r.author }}{% endif %}</p>
+    {% endfor %}
+		{%- block PageDivide -%}
+		<div style="margin-left:auto;margin-right:auto;position:relative;text-align:center">
+		第&nbsp;
+		{%- for r in range(TotalListLength//20+1)-%}
+		<a href="/list/{{ listtype }}/{{ fatherkey }}/{{ r+1 }}">{{ r+1 }}</a>&nbsp;
+		
+		{%- endfor -%}
+		页</div>
+		{% endblock %}
+		{% block AddCell %}
+		<form  style="margin-left:auto;margin-right:auto" action="/add/{{ listtype }}/" method="get">
+		{{ namedescription}}名称：<input type="text" name="elementname"/><br/>
+		{% if listtype=="book" %}
+		作者：<input type="text" name="author"/><br/>
+		{% else %}
+		在第<input type="text" name="insertafter" />个{{ namedescription}}后插入
+		<input type="hidden" name="parentkey" value="{{ fatherkey }}"/>
+		<input type="hidden" name="bookkey" value="{{ bookkey }}"/>
+		{% endif %}
+		<input type=submit value="提交">
+		</form>
+		{% endblock %}
+		
+</div>

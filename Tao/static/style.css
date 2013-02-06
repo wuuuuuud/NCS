@@ -1,0 +1,28 @@
+.content
+{
+	width: 60%;
+	border: 2px blue solid;
+	left: 25%;
+	right: 25%;
+	top: 2em;
+	position:absolute
+}
+
+.content p::selection
+{
+	background-color:yellow
+}
+
+.content p
+{
+	text-indent: 2em;
+	white-space: normal;
+	padding:0em 2em 0em 2em;
+	word-break:break-all;
+    border:1px solid;  
+}
+
+.hidden
+{
+	visibility: hidden;
+}
