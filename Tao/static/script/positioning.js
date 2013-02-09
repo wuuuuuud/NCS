@@ -2,6 +2,7 @@
 function getPosition(eventObj, contentObj, docObj, winObj)
 {
     
+    var timestamp = (new Date()).valueOf();
     var event = eventObj;
     var eventY = event.clientY;
     var eventX = event.clientX;
@@ -27,7 +28,6 @@ function getPosition(eventObj, contentObj, docObj, winObj)
         if (event.clientY <= jdown[1] && event.clientX <= jdown[0]) outOfRange = true;
         cleanning(q);
     }
-    while ($(".marker").length != 0) cleanning($(".marker")[0]);
     {
         var q = insertAfterText(t, tl);
         jup.push(getAbsoluteLeft(q));
@@ -183,6 +183,11 @@ function getPosition(eventObj, contentObj, docObj, winObj)
 
             }
             if (DEBUG) alert("continue");
+            if ((new Date()).valueOf() - timestamp > 2000) {
+                alert("time out");
+                outOfRange = true;
+                break;
+            }
         }
     }
     else {
@@ -317,7 +322,7 @@ function initialize()
     });
     contentDOM.addEventListener("mouseup", onContentMouseUp);
     
-    
+    contentDOM.addEventListener("click", onContentClick);
     paragraphs=contentDOM.firstChild.getAttribute("id");
     for (i = 1;i<=contentDOM.childNodes.length-1;i++)
     {
@@ -327,7 +332,8 @@ function initialize()
         "url": "/get/multiply/comment/",
         "type": "POST",
         "data":"paragraphList="+paragraphs,
-    }).done(function (data) {
+    })
+        .done(function (data) {
         commentList = jQuery.parseJSON(data);
         ajaxData = data;
     });
@@ -336,6 +342,7 @@ function initialize()
 function onContentMouseMove(event)
 {
     if (document.getSelection(0).toString() == "") {
+        var timestamp = (new Date()).valueOf();//time record;
         var result = getPosition(event, $(content)[0], document, window);
         if (result["offset"] != null) {
             var offset = result["offset"];
@@ -367,13 +374,20 @@ function onContentMouseMove(event)
                 }
             });
 
-            }
+            $(indicator)[0].innerHTML += "<br />" + ((new Date()).valueOf() - timestamp) + "<br />"; //time
+        }
+        
     }
 
 }
 function showComment(value)
 {
     indicator.innerHTML += value.content + "<br />";
+    value["show"] = true;
+    //value["beginning"] = document.createElement("DIV");
+    //_b = value.beginning;
+    //_b.setAttribute("style","position:absolute;")
+
 }
 function getAbsoluteLeft(o)
 {
@@ -435,6 +449,19 @@ function onContentMouseUp(event)
     }
     
 }
+function onContentClick(event)
+{
+    var t = event.target;
+    while (t.nodeName != "P") t = t.parentNode;
+    var key = t.id;
+    DivUP.style.visibility = "visible";
+    DivUP.style.left = "0 px";
+    DivUP.style.top = (100 + window.scrollY) + "px";
+    UpdateParagraph.key.value = key;
+    UpdateParagraph.content.innerHTML = t.innerHTML;
+
+
+}
 function sendComment(self)
 {
     var ajaxBody;
@@ -450,7 +477,7 @@ function sendComment(self)
         {
             requestData+=data[i].getAttribute("name")+"="+data[i].getAttribute("value")+"&";
         }
-        else if(data[i].nodeName="TEXTAREA")
+        else if(data[i].nodeName=="TEXTAREA")
         {
             requestData+=data[i].getAttribute("name")+"="+data[i].value+"&";
         }
@@ -461,7 +488,32 @@ function sendComment(self)
         "method": "POST",
         "data": requestData,
     })
-        .done(function () { alert("success"); })
+        .done(function (data) {
+            alert("批注成功");
+            commentList.push(jQuery.parseJSON(data));
+
+        })
+        .fail(function () { alert("failed"); });
+}
+function updateParagraph(self)
+{
+    var ajaxBody;
+    var requestData = "";
+    var data = UpdateParagraph.childNodes;
+
+    requestData = jQuery(UpdateParagraph).serialize();
+    //alert(requestData);
+    var ajaxRequest = $.ajax({
+        "url": "/update/paragraph",
+        "method": "POST",
+        "data": requestData,
+    })
+        .done(function (data) {
+            document.getElementById(UpdateParagraph.key.value).innerHTML = data;
+            NEW = true;
+            treelize(document.getElementById(UpdateParagraph.key.value));
+            NEW = false;
+        })
         .fail(function () { alert("failed"); });
 }
 Array.prototype.hasObject = (

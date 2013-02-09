@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 import webapp2
+import logging
 import cgi
 import datetime
 import jinja2
@@ -67,6 +68,20 @@ class Utility:
                 'chinese':[u"书籍",u"系列",u"卷",u"部",u"章",u"节",u"段"],
                 'tablename':['CS_Book','CS_Series','CS_Volume','CS_Part','CS_Chapter','CS_Node','CS_Paragraph'],
                 }
+    @staticmethod
+    def getKey(_instance,_name):
+        return Utility.getSafeKey(_instance.request.get(_name))
+    @staticmethod
+    def getPurview(_bookKey,_userKey,_dbName="CS_BookUser"):
+        _q=db.GqlQuery("SELECT purview FROM "+_dbName+" WHERE bookKey='"+_bookKey+"' AND userKey='"+_userKey+"'")
+        logging.info(str(_q))
+        _purview=''
+        try :
+            _purview=_q.get()
+        except :
+            logging.info("fail to get purview string")
+            pass
+        return _purview
 
 def topNavigator(self,_leafkey=""):
     template_values = {
@@ -385,9 +400,11 @@ class AddParagraphHandler(BaseHandler):
 class ListParagraphHandler(BaseHandler):
     def get(self,_parentKey,_page):
         result=db.GqlQuery("SELECT * FROM CS_Paragraph WHERE parentKey='"+_parentKey+"' ORDER BY order ASC").fetch(100000)
+        _bookKey=CS_Node.get(_parentKey).bookKey
         self.response.write(topNavigator(self,_parentKey))
         template_values={
                           'result':result,
+                          'bookKey':_bookKey,
                           }
         template=jinja_environment.get_template('content.html')
         self.response.write(template.render(template_values))
@@ -412,6 +429,7 @@ class AddCommentHandler(BaseHandler):
             _paragraph=db.get(_key)
             _paragraph.comments.append(_newkey)
             _paragraph.put()
+        self.response.write(json.encode(to_dict(_new)))
 
 class ListCommentHandler(BaseHandler):
     def get(self,_parentKey,_page=1):
@@ -522,9 +540,39 @@ class ApiGetMultiplyCommentHandler(BaseHandler):
             _result.insert(0,to_dict(_comment))
         self.response.write(json.encode(_result))
 
+class UpdateParagraphHandler(BaseHandler):
+    def post(self):
+        _key=Utility.getSafeKey(self.request.get("key"))
+        _bookKey=Utility.getSafeKey(self.request.get("bookKey"))
+        _content=self.request.get("content")
+        _userKey=self.session.get("key")
+        _purview="owner"
+        #_purview=db.GqlQuery("SELECT * FROM CS_BookUser WHERE bookKey='"+_bookKey+"' AND userKey='"+_userKey+"'").get().purview
+        #_purview=db.GqlQuery("SELECT * FROM CS_BookUser WHERE userKey='"+self.session.get("key")+"' AND bookKey='"+_bookKey+"'").get().purview
+        logging.info(_content)
+        logging.info(_userKey)
+        logging.info(_bookKey)
+        logging.info(self.request.body)
+        if (_purview=="owner"):
+            _paragraph=CS_Paragraph.get(_key)
+            _paragraph.content=_content
+            _paragraph.put()
+            self.response.write(_content);
 
+class DeleteCellHandler(BaseHandler):
+    def post(self):
+        _bookKey=Utility.getSafeKey(self.request.get("bookKey"))
+        _key=Utility.getSafeKey(self.request.get("key"))
+        _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
+        _purview=Utility.getPurview(_bookKey,_userKey)
+        _cellType=self.request.get("cellType")
+        if (_purview=="owner"):
+            pass
 
-                 
+class UpdateCellHandler(BaseHandler):
+    def post(self):
+        pass
+                          
 config = {}
 config['webapp2_extras.sessions'] = {
     'secret_key': 'CounterTop',  
@@ -539,7 +587,7 @@ app = webapp2.WSGIApplication([
     (r'/list/((?:series)|(?:volume)|(?:part)|(?:chapter)|(?:node))/(\w*-*[\w\-]*)/?([0-9]*)',ListCellHandler),
     (r'/list/book/*',ListBookHandler),
     (r'/list/paragraph/(\w*-*[\w\-]*)/?([0-9]*)',ListParagraphHandler),
-    (r'/list/comment/(\w+-*\w+)/?',ListCommentHandler),
+    (r'/list/comment/(\w+-*[\w\-]+)/?',ListCommentHandler),
     (r'/add/series/*',AddSeriesHandler),
     (r'/add/volume/*',AddVolumeHandler),
     (r'/add/part/*',AddPartHandler),
@@ -549,6 +597,9 @@ app = webapp2.WSGIApplication([
     (r'/add/comment/*',AddCommentHandler),
     (r'/manage/add/*',AddMultiplyChapterAndNodeAndParagraphHandler),
     (r'/get/multiply/comment/*',ApiGetMultiplyCommentHandler),
+    (r'/update/paragraph/*',UpdateParagraphHandler),
+    (r'/delete/cell/*',DeleteCellHandler),
+    (r'/update/cell/*',UpdateCellHandler),
     (r'/register/user/*',RegisterUserHandler),
     (r'/logout/user/*',LogoutHandler),
     (r'/login/user/*',LoginHandler),

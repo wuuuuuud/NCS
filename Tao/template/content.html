@@ -30,3 +30,12 @@
             <textarea name="relatedNodes" style="visibility:hidden;width:0px;height:0px"></textarea>
 </form>
     </div>
+<div id="DivUP" style="position:absolute;border:gold 3px solid;visibility:hidden">
+    <form id="UpdateParagraph" action="/update/paragraph/" method="post">
+        <input type="hidden" name="key" />
+        <input type="hidden" name="bookKey" value="{{ bookKey }}"/>
+        <textarea style="width:300px;" name="content"></textarea>
+        <input type="button" value="提交" onclick="updateParagraph(this);" />
+        <input type="button" value="关闭" onclick="DivUP.style.visibility='hidden';" />
+    </form>
+</div>
