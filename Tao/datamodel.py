@@ -91,3 +91,14 @@ class CS_Comment(db.Model):
     startOffset=db.IntegerProperty(required=True)
     endOffset=db.IntegerProperty(required=True)
     other=db.TextProperty()
+
+class CS_Category(db.Model):
+    parentKey=db.StringProperty(required=True)
+    name=db.StringProperty(required=True)
+    order=db.IntegerProperty(required=True)
+    next=db.StringProperty(default='')
+    previous=db.StringProperty(default='')
+    other=db.StringProperty()
+    bookKey=db.StringProperty(required=True)
+    level=db.StringProperty(required=True)
+    style=db.StringProperty(required=True)

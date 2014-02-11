@@ -308,25 +308,9 @@ function initialize()
 
     var d = document;
     var direction = 0.7;
-    var _Last = 0;
-    var scrollTimestamp=0;
-    window.addEventListener("scroll", function () {
-    	//alert("!");
-    	if ((Math.abs(window.scrollY - _Last) < 15)&& (((new Date()).valueOf() - scrollTimestamp) < 100)) return;
-    	
-    	scrollTimestamp = (new Date()).valueOf();
-    	_Last = window.scrollY;
-    	//$(rightBar).stop();
-    	//$(rightBar).animate({ time: 1000, "top": (window.scrollY) });
-    	rightBar.style.top = _Last + "px";
-    	leftBar.style.top = rightBar.style.top;
-    	//$(leftBar).stop();
-		//$(leftBar).animate({ time: 1000, top: window.scrollY });
-	//$.animate(rightBar.style.top)
-
-    })
     
-    window.addEventListener("resize", function () { refreshCommentIndicator(); });
+    
+
 
     //contentDOM.addEventListener("mouseup", f, false);
 
@@ -352,18 +336,13 @@ function initialize()
         .done(function (data) {
         commentList = jQuery.parseJSON(data);
         ajaxData = data;
-        commentList.forEach(function (value, key) {
-            showCommentIndicator(value);
-        })
     });
 
 }
 function onContentMouseMove(event)
 {
     if (document.getSelection(0).toString() == "") {
-        //hideAllComment(commentList);
-    	activatedComments = [];
-    	var timestamp = (new Date()).valueOf();//time record;
+        var timestamp = (new Date()).valueOf();//time record;
         var result = getPosition(event, $(content)[0], document, window);
         if (result["offset"] != null) {
             var offset = result["offset"];
@@ -374,7 +353,7 @@ function onContentMouseMove(event)
                 if (value.relatedNodes.hasObject(paraid)) {
                     if (value.firstNode == paraid) {
                         if (value.lastNode == paraid) {
-                            if (offset > value.startOffset && offset <= value.endOffset) {
+                            if (offset > value.startOffset && offset < value.endOffset) {
                                 showComment(value);
                             }
                         }
@@ -385,7 +364,7 @@ function onContentMouseMove(event)
                         }
                     }
                     else if (value.lastNode == paraid) {
-                        if (offset <= value.endOffset) {
+                        if (offset < value.endOffset) {
                             showComment(value);
                         }
                     }
@@ -394,16 +373,6 @@ function onContentMouseMove(event)
                     }
                 }
             });
-            commentList.forEach(function (value, key) {
-            	if (activatedComments.indexOf(value) == -1) {
-            		hideComment(value);
-            		if (value["commentBox"] != undefined && value["commentBox"]!=null) {
-            		    $(value["commentBox"]).stop(true,true).slideUp(400, function () { this.remove();});//.style.visibility = "hidden";
-            			//value["commentBox"].remove();
-            		}
-            	}
-            })
-            //showCommentBoxes(activatedComments);
 
             $(indicator)[0].innerHTML += "<br />" + ((new Date()).valueOf() - timestamp) + "<br />"; //time
         }
@@ -413,108 +382,15 @@ function onContentMouseMove(event)
 }
 function showComment(value)
 {
-    activatedComments.push(value);
-    $fn = document.getElementById(value.firstNode);
-	if (value["show"]) return;
-	$padding = parseInt(window.getComputedStyle($fn).paddingLeft);
-	d = document;
     indicator.innerHTML += value.content + "<br />";
     value["show"] = true;
     value["beginning"] = document.createElement("DIV");
-    _startAnchor=insertAfterText(d.getElementById(value.firstNode),value.startOffset);
+    _startAnchor=insertAfterText(value.firstNode
     _b = value.beginning;
-    _b_p = getAnchorParameter(_startAnchor,true);
+    _b.setAttribute("style","position:absolute;");
+    _b.
+	    
 
-    _endAnchor = insertAfterText(d.getElementById(value.lastNode), value.endOffset);
-    _e_p = getAnchorParameter(_endAnchor, true);
-    _b.style.position = "absolute";
-    _b.style.left = _b_p["left"] + "px";
-    if (_b_p.top == _e_p.top)
-    {
-        _b.style.width = (_e_p.left - _b_p.left) + "px";
-    }
-    else
-    {
-        _b.style.width = (getAbsoluteLeft(d.getElementById(value.firstNode)) + d.getElementById(value.firstNode).offsetWidth - _b_p.left - $padding) + "px";//window.getComputedStyle(d.getElementById(value.firstNode)).paddingLeft
-    }
-
-    _b.style.top = (_b_p.top - _b_p.height) + "px";
-    _b.style.height = _b_p.height + "px";
-    _b.style.border = "";
-    _b.style.backgroundColor = "rgba(" + Math.round(Math.random() * 256) + "," + Math.round(Math.random() * 256) + "," + Math.round(Math.random() * 256) + ",0.2)";
-    //_b.style.opacity = 0.2;
-    _b.style.pointerEvents = "none";
-    document.body.appendChild(_b);
-    value["bgcolor"] = _b.style.backgroundColor;
-    //created the heading highlighter
-    if (_b_p.top!=_e_p.top)
-    {
-        //create the caudal highlighter
-        value["caudal"] = document.createElement("DIV");
-        $e = value.caudal;
-        $e.className += " highlighter";
-        $e.style.top = (_e_p.top - _e_p.height) + "px";
-        $e.style.height = _e_p.height + "px";
-        $e.style.left = getAbsoluteLeft(d.getElementById(value.firstNode)) + $padding + "px";
-        $e.style.width = (_e_p.left - $padding - getAbsoluteLeft(d.getElementById(value.firstNode))) + "px";
-        $e.style.backgroundColor = value.bgcolor;
-        document.body.appendChild($e);
-        //create the middle highlighter;
-        value["middle"] = document.createElement("DIV");
-        $m = value.middle;
-        $m.className += " highlighter";
-        $m.style.left = $e.style.left;
-        $m.style.top = _b_p.top + "px";
-        $m.style.height = _e_p.top - _b_p.top -_e_p.height + "px";
-        $m.style.width = (d.getElementById(value.firstNode).offsetWidth - 2 * $padding) + "px";
-
-        $m.style.backgroundColor = value.bgcolor;
-        document.body.appendChild($m);
-
-
-
-    }
-    showCommentBox(value);
-
-}
-
-function getAnchorParameter(_anchor, _clean)
-{
-    _anchor.style.display = "inline-block";
-    _anchor.style.verticalAlign = "text-top";
-    _anchorHeight = _anchor.offsetTop;
-    //alert(_anchorHeight);
-    _anchor.style.display = "inline-block";
-    _anchor.style.verticalAlign = "text-bottom";
-    _anchorLeft = getAbsoluteLeft(_anchor) + window.scrollX;
-    _anchorTop = getAbsoluteTop(_anchor) + window.scrollY;
-    _anchorHeight = _anchor.offsetTop - _anchorHeight;
-    if (_clean) cleanning(_anchor);
-    return { "left": _anchorLeft, "top": _anchorTop, "height": _anchorHeight };
-}
-function hideComment(value)
-{
-    if (value.hasOwnProperty("beginning")!=null && value.hasOwnProperty("beginning")!= undefined && value.hasOwnProperty("beginning"))
-    {
-    	(value.beginning.remove());
-    	value["show"] = false;
-    }
-    if (value.hasOwnProperty("caudal") != null && value.hasOwnProperty("caudal") != undefined && value.hasOwnProperty("caudal")) {
-        (value.caudal.remove());
-        value.middle.remove();
-        value["show"] = false;
-
-
-    }
-    value["show"] = false;
-}
-function hideAllComment(values)
-{
-    _l = values.length;
-    for(var i=0;i<=_l-1;i++)
-    {
-        hideComment(values[i]);
-    }
 }
 function getAbsoluteLeft(o)
 {
@@ -574,10 +450,7 @@ function onContentMouseUp(event)
         Adc.relatedNodes.value += "#_#" + i.getAttribute("id");
         
     }
-    newCommentBox.style.left = event.clientX + window.scrollX;
-    newCommentBox.style.top = event.clientY+window.scrollY;
-    newCommentBox.style.visibility = "visible";
-
+    
 }
 function onContentClick(event)
 {
@@ -663,153 +536,13 @@ Array.prototype.hasObject = (
       return (this.indexOf(o) !== -1);
   }
 );
-function hasObject (masterObject,a)
-    {
-    return (masterObject.hasOwnProperty(a) != null && masterObject.hasOwnProperty(a) != undefined && masterObject.hasOwnProperty(a));
-    }
-
-function showCommentBox(commentObject){
-	_CO = commentObject;
-	if (_CO["commentBox"] == undefined || _CO["commentBox"] == null) {
-		createCommentBox(_CO);
-	}
-	_CB = _CO["commentBox"];
-	//leftBar.appendChild(_CB);
-	_CB.style.visibility = "visible";
-	_CB.style.backgroundColor = _CO["bgcolor"];
-	
-	_CB.setAttribute("computedHeight", $(_CB).height());
-	lcount = leftBar.childNodes.length;
-	rcount = rightBar.childNodes.length;
-	_inserted = false;
-	if (lcount > rcount)
-	{
-		for (i = 0; i < rcount; i++)
-		{
-			if (!compareCommentBox(_CB, rightBar.childNodes[i])) {
-				rightBar.insertBefore(_CB,rightBar.childNodes[i]);
-				_inserted = true;
-				break;
-			}
-
-		}
-		if (!_inserted) rightBar.appendChild(_CB);
-		
-	}
-	else
-	{
-		for (i = 0; i < lcount; i++) {
-			if (!compareCommentBox(_CB, leftBar.childNodes[i])) {
-				leftBar.insertBefore(_CB,leftBar.childNodes[i]);
-				_inserted = true;
-				break;
-			}
-
-		}
-		if (!_inserted) leftBar.appendChild(_CB);
-	}
-	$(_CB).stop(true,true).slideDown(300);
-
-
-}
-function compareCommentBox(_first, _last)
-{
-	if (INT($(_first).attr("relativePosition")) != INT($(_last).attr("relativePosition")))
-		return INT($(_first).attr("relativePosition")) > INT($(_last).attr("relativePosition"));
-	return INT($(_first).attr("computedHeight")) > INT($(_last).attr("computedHeight"));
-}
-function showCommentBoxes(_activatedComments)
-
-{
-	lprv=-1;
-	rprv=-1;//right bar previous relative position
-	lprdiv=null;
-	//rprdiv=null;
-	_activatedComments.forEach(function (value, key) {
-		if (value["commentBox"] == undefined || value["commentBox"] == null) {
-			createCommentBox(value);
-		}
-		
-		_CB = value["commentBox"];
-		leftBar.appendChild(_CB);
-		_CB.style.visibility = "visible";
-		_CB.style.backgroundColor = value["bgcolor"];
-		_CB.style.borderColor = value["bgcolor"];
-		_CB.setAttribute("computedHeight", parseInt(window.getComputedStyle(_CB)["height"]));
-		cprv = _CB.getAttribute("relativePosition");
-		//alert(cprv);
-		if (cprv < lprv) {
-			if (cprv >= rprv) {
-				rightBar.appendChild(_CB);
-				rprv = cprv;
-			} else
-			{
-				_CB.insertBefore(lprdiv);
-
-			}
-			
-		} else {
-			lprv = cprv;
-			lprdiv = _CB;
-		}
-
-	})
-}
-function createCommentBox(commentObject)
-{
-	relativePosition = getRelativePosition(commentObject);
-	commentObject["commentBox"] = document.createElement("DIV");
-	_tempBox = commentObject.commentBox;
-	_tempBox.className = "commentBox row-fluid";
-	_tempBox.innerHTML = "<b>"+commentObject["username"] + "</b>:" + commentObject["content"];
-	_tempBox.setAttribute("relativePosition", relativePosition);
-	
-	leftBar.appendChild(_tempBox);
-
-
-}
-function getRelativePosition(commentObject)
-{
-	if (commentObject["show"] == true) {
-		return parseInt(commentObject["beginning"].style.top);
-	}
-	else { return 0; }
-}
-function showCommentIndicator(commentObject)
-{
-    $CO = commentObject;
-    if (hasObject($CO,"indicator")) $CO.indicator.remove();
-    $FN = document.getElementById($CO.firstNode);
-    $CI = $CO["indicator"]=document.createElement("DIV");
-    //$CI.style.left
-    $CM = insertAfterText($FN, $CO.startOffset);
-    $AP = getAnchorParameter($CM, true);//Anchor parameter
-
-    $CI.className = "indicator";
-    $CI.style.left = $AP.left + "px";
-    $CI.style.top = $AP.top-$AP.height;
-    document.body.appendChild($CI);
-}
-function refreshCommentIndicator()
-{
-    commentList.forEach(function (value, key)
-    {
-        showCommentIndicator(value);
-    }
-    );
-    
-}
-function INT(x) { return parseInt(x);}
 var DEBUG = false;
 var commentList = [];
 var paragraphs;
-var activatedComments = [];
 var ajaxData;
 var json;
 var GLOBAL = {};
 var contentDOM;
 var treelizeCache = {};
 var NEW = true;
-var DGEBI = document.getElementById;
-
 $(document).ready(initialize)

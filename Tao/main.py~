@@ -67,31 +67,20 @@ class Utility:
                 'english':['book','series','volume','part','chapter','node','paragraph'],
                 'chinese':[u"书籍",u"系列",u"卷",u"部",u"章",u"节",u"段"],
                 'tablename':['CS_Book','CS_Series','CS_Volume','CS_Part','CS_Chapter','CS_Node','CS_Paragraph'],
-                'model':[CS_Book,CS_Series,CS_Volume,CS_Part,CS_Chapter,CS_Node,CS_Paragraph],
                 }
-    @staticmethod
-    def getModel(_cellName):
-        _index=Utility.__celllist["english"].index(_cellName)
-        return Utility.__celllist["model"][_index]
-    @staticmethod
-    def getElement(_cellName,_type):
-        _index=Utility.__celllist['english'].index(_cellName)
-        return Utility.__celllist[_type][_index]
-        
     @staticmethod
     def getKey(_instance,_name):
         return Utility.getSafeKey(_instance.request.get(_name))
     @staticmethod
     def getPurview(_bookKey,_userKey,_dbName="CS_BookUser"):
-        _q=db.GqlQuery("SELECT * FROM "+_dbName+" WHERE bookKey='"+_bookKey+"' AND userKey='"+_userKey+"'")
-        #logging.info(str(_q))
+        _q=db.GqlQuery("SELECT purview FROM "+_dbName+" WHERE bookKey='"+_bookKey+"' AND userKey='"+_userKey+"'")
+        logging.info(str(_q))
         _purview=''
         try :
-            _purview=_q.get().purview
+            _purview=_q.get()
         except :
             logging.info("fail to get purview string")
             pass
-        logging.info("!"+_purview)
         return _purview
 
 def topNavigator(self,_leafkey=""):
@@ -147,10 +136,10 @@ def addCell(_handlerinstance,argv):
 
     if (_purview=="owner"):
         _handlerinstance.response.write('purview valid!')
-        _counts=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE parentKey='"+_parentkey+"'").count()
+        _counts=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE bookKey='"+_bookkey+"'").count()
         _handlerinstance.response.write("counts:"+str(_counts))
         if ((_insertafter==-1) or (_counts==0) or (_insertafter>=_counts)):#no insertafter assigned or originally no series or overflow insertafter position
-            _previouskey=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE parentKey='"+_parentkey+"' AND order="+str(_counts)).get()
+            _previouskey=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE order="+str(_counts)).get()
             if (_previouskey):
                 _new=argv["celltype"](order=(_counts+1),bookKey=_bookkey,name=_name,previous=str(_previouskey),parentKey=_parentkey)
                 _new.put()
@@ -161,7 +150,7 @@ def addCell(_handlerinstance,argv):
                 _newseries=argv["celltype"](order=(_counts+1),bookKey=_bookkey,name=_name,previous="",parentKey=_parentkey)
                 _newseries.put()
         elif (_insertafter<_counts):#originally at least one series AND legal insertafter position ,NEVER insert at the end
-            _nextkey=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE parentKey='"+_parentkey+"' AND order="+str(_insertafter+1)).get()
+            _nextkey=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE order="+str(_insertafter+1)).get()
             _next=db.get(_nextkey)
             _new=argv["celltype"](order=(_insertafter+1),bookKey=_bookkey,name=_name,previous=(_next.previous),next=str(_nextkey),parentKey=_parentkey)
             _new.put()
@@ -362,25 +351,19 @@ class RegisterUserHandler(BaseHandler):
         else:
             self.response.write('username already exists!')
 
-
 class LoginHandler(BaseHandler):
     def post(self):
-        _username = str(self.request.POST['username'])
-        _password = self.request.POST['password']
-        assumecorrect = db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"' AND password='"+_password+"'").get()
-        returnObject = {}
-        returnObject['success'] = False
-        returnObject['affair'] = "Log in"
+        _username=str(self.request.POST['username'])
+        _password=self.request.POST['password']
+        assumecorrect=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"' AND password='"+_password+"'").get()
         if (assumecorrect):
             user=db.get(assumecorrect)
             self.session["loggedin"]="yes"
             self.session["username"]=user.username
             self.session["key"]=str(assumecorrect)
-            returnObject['success'] = True
-            returnObject['username'] = user.username
-            self.response.write(json.encode(returnObject))
+            self.response.write("succeeded in login!"+user.username)
         else:
-            self.response.write(json.encode(returnObject))
+            self.response.write("failed on login,please recheck your password or username!")
 
 class LoginTestHandler(BaseHandler):
     def get(self):
@@ -394,11 +377,7 @@ class LogoutHandler(BaseHandler):
         self.session["loggedin"]=""
         self.session["username"]=""
         self.session["key"]=""
-        returnObject = {}
-        returnObject["affair"]="Log out"
-        returnObject["success"] = True
-        self.response.write(json.encode(returnObject))
-
+        self.response.write("you have logged out!")
 
 class AddParagraphHandler(BaseHandler):
     def post(self):
@@ -453,17 +432,12 @@ class AddCommentHandler(BaseHandler):
         self.response.write(json.encode(to_dict(_new)))
 
 class ListCommentHandler(BaseHandler):
-    def post(self,_parentKey,_page=1):
+    def get(self,_parentKey,_page=1):
         _paragraph=db.get(_parentKey)
         
         for _commentKey in _paragraph.comments:
             _comment=CS_Comment.get(_commentKey)
-            _user=CS_User.get(_comment.userKey)
             _result.insert(0,to_dict(_comment))
-            logging.WARNING("alive")
-            logging.info(_user.username)
-            logging.info(_result[0]['userKey'])
-            _result[-1]['username']=_user.username;
         self.response.write(json.encode(_result))
 
 class AddMultiplyChapterAndNodeAndParagraphHandler(BaseHandler):
@@ -563,10 +537,7 @@ class ApiGetMultiplyCommentHandler(BaseHandler):
         _comments=set(_comments)
         for _cKey in _comments:
             _comment=CS_Comment.get(_cKey)
-            _user=CS_User.get(_comment.userKey)
-
             _result.insert(0,to_dict(_comment))
-            _result[0]["username"]=_user.username
         self.response.write(json.encode(_result))
 
 class UpdateParagraphHandler(BaseHandler):
@@ -593,77 +564,25 @@ class DeleteCellHandler(BaseHandler):
         _bookKey=Utility.getSafeKey(self.request.get("bookKey"))
         _key=Utility.getSafeKey(self.request.get("key"))
         _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
-        _userKey=self.session.get("key")
         _purview=Utility.getPurview(_bookKey,_userKey)
         _cellType=self.request.get("cellType")
-        logging.info(_cellType)
-        logging.info(_purview)
         if (_purview=="owner"):
-            logging.info("purview valid!")
-            _current=db.get(_key)
-            if (_current.previous and _current.previous!=""):
-                _previous=db.get(_current.previous)
-                if(_current.next and _current.next!=""):
-                    _previous.next=_current.next
-                    _next=db.get(_current.next)
-                    _next.previous=_current.previous
-                    _next.put()
-                    _previous.put()
-                    _affected=db.GqlQuery("SELECT * FROM "+Utility.getElement(_cellType,u"tablename")+" WHERE parentKey='"+_current.parentKey+"' AND order > "+str(_current.order)).fetch(100000)
-                    for _element in _affected:
-                        _element.order-=1
-                        _element.put()
-                else:
-                    _previous.next=""
-                    _previous.put()
-            else:
-                if(_current.next and _current.next!=""):
-                    _next=db.get(_current.next)
-                    _next.previous=""
-                    _next.put()
-                    _affected=db.GqlQuery("SELECT * FROM "+Utility.getElement(_cellType,u"tablename")+" WHERE parentKey='"+_current.parentKey+"' AND order > "+str(_current.order)).fetch(100000)
-                    for _element in _affected:
-                        _element.order-=1
-                        _element.put()
-                else:
-                    pass
-            #cleanning child elements
-            #too lazy to implement it
-            _current.delete()
-
+            pass
 
 class UpdateCellHandler(BaseHandler):
     def post(self):
-        _bookKey=Utility.getSafeKey(self.request.get("bookKey"))
-        _key=Utility.getSafeKey(self.request.get("key"))
-        _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
-        _userKey=self.session.get("key")
-        _purview=Utility.getPurview(_bookKey,_userKey)
-        _cellType=self.request.get("cellType")
-        _newName=self.request.get("newName")
-        logging.info(_cellType)
-        logging.info(_purview)
-        if (_purview=="owner"):
-            logging.info("purivew valid!")
-            _current=db.get(_key)
-            _current.name=_newName
-            _current.put()
-            logging.info("update succeeded!")
-            return self.response.write(_newName)
-        else:
-            logging.info("purview validation failed")
+        pass
                           
 config = {}
 config['webapp2_extras.sessions'] = {
     'secret_key': 'CounterTop',  
 }
-config['PWMD5Salt']='StoneforgeSword'
 
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)+"/template"))# jinja2 config,set dir
 
 app = webapp2.WSGIApplication([
-    ('/reset' , ResetDataStoreHandler), 
+    ('/reset',ResetDataStoreHandler),
     (r'/add/book/*',AddBookHandler),
     (r'/list/((?:series)|(?:volume)|(?:part)|(?:chapter)|(?:node))/(\w*-*[\w\-]*)/?([0-9]*)',ListCellHandler),
     (r'/list/book/*',ListBookHandler),
@@ -677,7 +596,6 @@ app = webapp2.WSGIApplication([
     (r'/add/paragraph/*',AddParagraphHandler),
     (r'/add/comment/*',AddCommentHandler),
     (r'/manage/add/*',AddMultiplyChapterAndNodeAndParagraphHandler),
-    (r'/get/comments/*',ApiGetMultiplyCommentHandler),
     (r'/get/multiply/comment/*',ApiGetMultiplyCommentHandler),
     (r'/update/paragraph/*',UpdateParagraphHandler),
     (r'/delete/cell/*',DeleteCellHandler),
@@ -691,7 +609,6 @@ app = webapp2.WSGIApplication([
     ('/test/',TestHandler),
     ('/', MainHandler)
 ], debug=True,config=config)
-
 
 
 #(r'/list/series/(\w*-\w*)/*',ListSeriesHandler),

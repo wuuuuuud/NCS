@@ -1,0 +1,4 @@
+generateNavigator = () ->
+
+loginRoutine = () ->
+	

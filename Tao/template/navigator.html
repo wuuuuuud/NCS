@@ -1,16 +1,36 @@
 
 <head>
+	<title>let me think one.</title>
 <link rel="stylesheet" type="text/css" href="/static/style.css" />
+<script type="text/javascript" src="/static/script/ncs.js" ></script>
+<script type="text/javascript" src="/static/script/jquery.1.9.js"></script>	
+<link type="text/css" href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+
+<link href="/static/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet" media="screen">
 </head>
-	<div style="position:fixed;width: 96%;border:1px solid blue;left: 2%;z-index:99;background-color:white">
-	<span>
+
+	
+
+<div class="navigateBar" style="position:fixed;border:0px solid blue;z-index:99;">
+	<span>>>
 	<a href="/list/book/">all books</a>{% for node in path %}>><a href="/list/{{ node[2] }}/{{ node[1] }}">{{ node[0] }}</a>{% endfor %}
 	</span>
-       <span style="float:right;margin:0em 1em 0em 0em">
+       <span style="float:right;margin:0em 3em 0em 0em">
 	   {% if username %}
        Welcome {{ username }}, <a href="/logout/user/">log out</a>
       {% else %}
-        Please <a href="/static/login.html">log in</a> 
+        Please <a href="/static/login.html">log in</a> or <a href="/static/register.html">register</a> 
       {% endif %}
       </span>
 	</div>
+
+<div id="loginBox" class="screenWideBox">
+	<form action="../login/user/" method="POST" id="loginForm">
+username:<input type="text" name="username"/><br/>
+password:<input type="text" name="password" /><br/>
+
+<input type="button" class="btn" id="loginSubmitButton" value="登陆" />
+<input type="button" class="btn-inverse btn" id="loginBoxCloseButton" value="关闭" /> 
+</form>
+</div>
+
