@@ -581,14 +581,9 @@ function onContentMouseUp(event)
 }
 function onContentClick(event)
 {
-    var t = event.target;
-    while (t.nodeName != "P") t = t.parentNode;
-    var key = t.id;
-    DivUP.style.visibility = "visible";
-    DivUP.style.left = "0 px";
-    DivUP.style.top = (100 + window.scrollY) + "px";
-    UpdateParagraph.key.value = key;
-    UpdateParagraph.content.innerHTML = t.innerHTML;
+
+    
+
 
 
 }
@@ -629,9 +624,7 @@ function updateParagraph(self)
 {
     var ajaxBody;
     var requestData = "";
-    var data = UpdateParagraph.childNodes;
-
-    requestData = jQuery(UpdateParagraph).serialize();
+    requestData = jQuery(UpdateParagraphForm).serialize();
     //alert(requestData);
     var ajaxRequest = $.ajax({
         "url": "/update/paragraph",
@@ -639,9 +632,9 @@ function updateParagraph(self)
         "data": requestData,
     })
         .done(function (data) {
-            document.getElementById(UpdateParagraph.key.value).innerHTML = data;
+            document.getElementById(UpdateParagraphForm.key.value).innerHTML = data;
             NEW = true;
-            treelize(document.getElementById(UpdateParagraph.key.value));
+            treelize(document.getElementById(UpdateParagraphForm.key.value));
             NEW = false;
         })
         .fail(function () { alert("failed"); });
@@ -812,4 +805,14 @@ var treelizeCache = {};
 var NEW = true;
 var DGEBI = document.getElementById;
 
-$(document).ready(initialize)
+$(document).ready(function () {
+    if ($("#content").length!=0)
+    {
+        initialize();
+        if ($("#rightBanner").length != 0)
+        {
+            leftBar=rightBar;
+        }
+    }
+
+})

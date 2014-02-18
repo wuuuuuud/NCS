@@ -1,5 +1,5 @@
-﻿#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 # Copyright 2007 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +21,17 @@ import datetime
 import jinja2
 import os
 import re
+import hashlib
+import xml.dom.minidom
 
 from google.appengine.ext import db
 from google.appengine.api import users
+from google.appengine.api import background_thread
+from google.appengine.api import taskqueue
 
 import datamodel
+import baseLib
+from baseLib import *
 from  toDict import *
 from datamodel import *
 from webapp2_extras import sessions
@@ -114,11 +120,12 @@ def topNavigator(self,_leafkey=""):
     for i in range(_count):
         branch[i]=(branch[i][0],branch[i][1],_typelist[i])
     template_values['path']=branch
-
-        
-
     template = jinja_environment.get_template('navigator.html')
     return (template.render(template_values))
+
+def navigateStringGenerator(_key):
+    return
+
 
 def addBook(_name,_owner,_author):
     userkey=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_owner+"' LIMIT 1").get()
@@ -131,6 +138,7 @@ def addBook(_name,_owner,_author):
     else:
         return "no such user!"
 
+
 def addCell(_handlerinstance,argv):
     _userkey=_handlerinstance.session.get("key")
     _name=_handlerinstance.request.get("elementname")
@@ -139,13 +147,14 @@ def addCell(_handlerinstance,argv):
     _insertafter=Utility.getSafeInt(_handlerinstance.request.get("insertafter"))
     _user=db.get(_userkey)
     _book=db.get(_bookkey)
+    #purview check
     _relation=db.GqlQuery("SELECT * FROM CS_BookUser WHERE userKey='"+_userkey+"' AND bookKey='"+_bookkey+"'").get()
     if (_relation):
         _purview=_relation.purview
     else:
         _purview=""
 
-    if (_purview=="owner"):
+    if (_purview=="owner"):#purview check
         _handlerinstance.response.write('purview valid!')
         _counts=db.GqlQuery("SELECT __key__ FROM "+argv["cellname"]+" WHERE parentKey='"+_parentkey+"'").count()
         _handlerinstance.response.write("counts:"+str(_counts))
@@ -354,33 +363,51 @@ class RegisterUserHandler(BaseHandler):
         _username=str(self.request.POST['username'])
         _password=self.request.POST['password']
         _email=self.request.POST['email']
+        returnObject={
+            'affair':'register new user',
+            'success':False,
+            'username':_username,
+            'email':_email
+        }
         assumeexist=db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"'").get()
         if (not assumeexist):
-            newuser=CS_User(username=_username,password=_password,email=_email)
+            newuser=CS_User(username=_username,password=hashlib.md5(_password+config['PWMD5Salt']).hexdigest(),email=_email)
             newuser.put()
-            self.response.write('succeeded in register')
+            newuser.secret=hashlib.md5(config['PWMD5Salt']+str(newuser.key())).hexdigest()
+            newuser.put()
+            returnObject.update(to_dict(newuser))
+            returnObject['success']=True
+            return self.response.write(json.encode(returnObject))
         else:
-            self.response.write('username already exists!')
+            returnObject['description']='username already exists!'
+            return self.response.write(json.encode(returnObject))
 
 
 class LoginHandler(BaseHandler):
     def post(self):
         _username = str(self.request.POST['username'])
         _password = self.request.POST['password']
-        assumecorrect = db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"' AND password='"+_password+"'").get()
+        assumecorrect = db.GqlQuery("SELECT __key__ FROM CS_User WHERE username='"+_username+"'").get()
+        
         returnObject = {}
         returnObject['success'] = False
         returnObject['affair'] = "Log in"
         if (assumecorrect):
             user=db.get(assumecorrect)
-            self.session["loggedin"]="yes"
-            self.session["username"]=user.username
-            self.session["key"]=str(assumecorrect)
-            returnObject['success'] = True
-            returnObject['username'] = user.username
-            self.response.write(json.encode(returnObject))
+            if user.password==hashlib.md5(_password+config['PWMD5Salt']).hexdigest():#check password
+                self.session["loggedin"]="yes"
+                self.session["username"]=user.username
+                self.session["key"]=str(assumecorrect)
+                returnObject['success'] = True
+                returnObject['username'] = user.username
+                returnObject['secret'] = user.secret
+                return self.response.write(json.encode(returnObject))
+            else:#wrong password
+                returnObject['description']="wrong password!"
+                return self.response.write(json.encode(returnObject))
         else:
-            self.response.write(json.encode(returnObject))
+            returnObject['description']='wrong username!'
+            return self.response.write(json.encode(returnObject))
 
 class LoginTestHandler(BaseHandler):
     def get(self):
@@ -405,7 +432,7 @@ class AddParagraphHandler(BaseHandler):
         _content=self.request.get('content')
         _parentKey=Utility.getSafeKey(self.request.get('parentkey'))
         _insertafter=self.request.get('insertafter')
-        _bookKey=self.request.get("bookkey")
+        _bookKey=getBookKey(_parentKey)
         if (_insertafter!=""):
             _insertafter=Utility.getSafeInt(_insertafter)
         else:
@@ -421,7 +448,7 @@ class AddParagraphHandler(BaseHandler):
 class ListParagraphHandler(BaseHandler):
     def get(self,_parentKey,_page):
         result=db.GqlQuery("SELECT * FROM CS_Paragraph WHERE parentKey='"+_parentKey+"' ORDER BY order ASC").fetch(100000)
-        _bookKey=CS_Node.get(_parentKey).bookKey
+        _bookKey=getBookKey(_parentKey)
         self.response.write(topNavigator(self,_parentKey))
         template_values={
                           'result':result,
@@ -433,7 +460,7 @@ class ListParagraphHandler(BaseHandler):
 class AddCommentHandler(BaseHandler):
     def post(self):
         _content=self.request.get('content')
-        _userKey=Utility.getSafeKey(self.session.get('key'))
+        _userKey=getUser(self)
         _startNode=Utility.getSafeKey(self.request.get('startNode'))
         _endNode=Utility.getSafeKey(self.request.get('endNode'))
         _startOffset=Utility.getSafeInt(self.request.get('startOffset'))
@@ -450,7 +477,9 @@ class AddCommentHandler(BaseHandler):
             _paragraph=db.get(_key)
             _paragraph.comments.append(_newkey)
             _paragraph.put()
-        self.response.write(json.encode(to_dict(_new)))
+        returnObject=to_dict(_new)
+        returnObject['username']=db.get(_userKey).username
+        self.response.write(json.encode(returnObject))
 
 class ListCommentHandler(BaseHandler):
     def post(self,_parentKey,_page=1):
@@ -574,15 +603,15 @@ class UpdateParagraphHandler(BaseHandler):
         _key=Utility.getSafeKey(self.request.get("key"))
         _bookKey=Utility.getSafeKey(self.request.get("bookKey"))
         _content=self.request.get("content")
-        _userKey=self.session.get("key")
-        _purview="owner"
+        _userKey=getUser(self)
+        _purview=Utility.getPurview(_bookKey, _userKey)
         #_purview=db.GqlQuery("SELECT * FROM CS_BookUser WHERE bookKey='"+_bookKey+"' AND userKey='"+_userKey+"'").get().purview
         #_purview=db.GqlQuery("SELECT * FROM CS_BookUser WHERE userKey='"+self.session.get("key")+"' AND bookKey='"+_bookKey+"'").get().purview
         logging.info(_content)
         logging.info(_userKey)
         logging.info(_bookKey)
         logging.info(self.request.body)
-        if (_purview=="owner"):
+        if (checkPurview(_purview)):
             _paragraph=CS_Paragraph.get(_key)
             _paragraph.content=_content
             _paragraph.put()
@@ -652,6 +681,479 @@ class UpdateCellHandler(BaseHandler):
             return self.response.write(_newName)
         else:
             logging.info("purview validation failed")
+
+class ApiAddClassHandler(BaseHandler):
+    """docstring for ApiAddClassHandler"""
+    def post(self):
+        #_bookKey=Utility.getSafeKey(self.request.get("bookKey"))
+        _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
+        _userKey=getUser(self)
+        logging.info(_userKey)
+        
+        _className=self.request.get("className").lower()
+        _name=self.request.get("name")
+        returnObject={
+            'affair':'Add Class Content',
+            'success':False,
+            'className':_className,
+            'description':''
+        }
+
+        _bookKey=getBookKey(_parentKey)
+        _purview=Utility.getPurview(_bookKey,_userKey).lower()
+        _newClass=None
+        if (not checkPurview(_purview)) and _className!='book':
+            returnObject['description']='invalid purview string!'
+            return self.response.write(json.encode(returnObject))
+        if _className=='book':
+            if _userKey=='' or db.get(_userKey)==None:
+                returnObject['description']='no user with provided info!'
+                return self.response.write(json.encode(returnObject))
+            _author=self.request.get("author")
+            metaInfo={
+                'author':_author,
+                'addTime':str(datetime.datetime.now()),
+                'modifyTime':str(datetime.datetime.now())
+            }
+            _newClass=CS_Book(name=_name,metaInfo=json.encode(metaInfo))
+            _newClass.put()
+            _newRelation=CS_BookUser(bookKey=str(_newClass.key()),userKey=str(_userKey),purview='owner')
+            _newRelation.put()
+            returnObject['success']=True
+            
+        else:
+            _order=Utility.getSafeInt(self.request.get("order")) #A.K.A. insert before
+            returnObject['description']+='classname not book\\r\\npurview valid\\r\\n'
+            _count=db.Query(CS_Class).filter('parentKey =',_parentKey).count(65535)#number of existed element under the same parent key
+            if _order<1:#must larger than 1, of course
+                _order=_count+1
+            metaInfo={
+                'addTime':str(datetime.datetime.now()),
+                'modifyTime':str(datetime.datetime.now())
+            }
+            _level=str(DataScheme['Class'][_className.title()]['level'])
+            if _order>_count:
+                _newClass=CS_Class(name=_name,
+                    order=_count+1,
+                    parentKey=_parentKey,
+                    bookKey=_bookKey,
+                    level=_level,
+                    metaInfo=json.encode(metaInfo),
+                    className=_className
+                    )
+                _newClass.put()
+                if _count>0:
+                    _prevClass=db.Query(CS_Class).filter('parentKey =',_parentKey).filter('order =',_count).get()
+                    _prevClass.next=str(_newClass.key())
+                    _prevClass.put()
+                    _newClass.previous=str(_prevClass.key())
+                    _newClass.put()
+                returnObject['success']=True
+            else:
+                _newClass=CS_Class(name=_name,
+                    order=0,
+                    parentKey=_parentKey,
+                    bookKey=_bookKey,
+                    level=_level,
+                    metaInfo=json.encode(metaInfo),
+                    className=_className
+                    )
+                _newClass.put()
+                _affected=db.Query(CS_Class).filter('parentKey =',_parentKey).filter('order >=',_order).fetch(10000000)
+                for _instance in _affected:
+                    _instance.order=_instance.order+1
+                    if (_instance.order==_order+1):
+                        _instance.previous=str(_newClass.key())
+                        _newClass.next=str(_instance.key())
+                    _instance.put()
+                _newClass.order=_order
+
+                if (_count>0 and _order>1):
+                    _prevClass=db.Query(CS_Class).filter('parentKey =',_parentKey).filter('order =',_order-1).get()
+                    _prevClass.next=str(_newClass.key())
+                    _prevClass.put()
+                    _newClass.previous=str(_prevClass.key())
+                _newClass.put()
+                returnObject['success']=True
+        returnObject['self']=(to_dict(_newClass))
+        returnObject['self']['key']=str(_newClass.key())
+        return self.response.write(json.encode(returnObject))
+                
+
+class ApiGetClassHandler(BaseHandler):
+    def get(self):
+        return self.post()
+    def post(self):
+        return self.response.write(json.encode(getClass(self)))
+
+def getClass(_handler):
+    _key=Utility.getSafeKey(_handler.request.get("key"))
+    returnObject={
+        'affair':'get class',
+        'className':'root',
+        'data':[],
+        'success':True
+    }
+    if _key == '':
+        _result=db.Query(CS_Book).order('name').fetch(100)
+        _count=_result.count(-1)
+        for _instance in _result:
+            returnObject['data'].insert(0,to_dict(_instance))
+            returnObject['data'][0]['key']=str(_instance.key())
+        return returnObject
+    else:
+        _result=None
+        try:
+            _result=CS_Class.get(_key)
+            returnObject['className']=_result.className
+        except:
+            _result=CS_Book.get(_key)
+            if _result==None:
+                returnObject['success']=False
+                returnObject['description']='no such key!'
+                return returnObject
+            else:
+                returnObject['className']='book'
+        returnObject['self']=to_dict(_result)
+        returnObject['self']['key']=str(_result.key())
+        _result=db.Query(CS_Class).filter('parentKey =',str(_result.key())).order('-order').fetch(100)
+        for _instance in _result:
+            returnObject['data'].insert(0,to_dict(_instance))
+            returnObject['data'][0]['key']=str(_instance.key())
+        return returnObject
+
+class SitePageHandler(BaseHandler):
+    def get(self):
+        return self.post()
+    def post(self):
+        returnObject=getClass(self)
+        _templateValue={
+            'data':json.encode(returnObject),
+        }
+        _user=getUser(self)
+        if _user!='':
+            _templateValue['user']=json.encode(to_dict(CS_User.get(_user)))
+            _templateValue['username']=CS_User.get(_user).username
+        else:
+            pass
+        _page=jinja_environment.get_template('header.html').render()
+        _page+=jinja_environment.get_template('title.html').render()
+        _page+=jinja_environment.get_template('banner.html').render(_templateValue)
+        _page+=jinja_environment.get_template('newList.html').render(_templateValue)
+        _page+=jinja_environment.get_template('fullScreenWrapper.html').render(_templateValue)
+        _page+=jinja_environment.get_template('toolButtonWrapper.html').render(_templateValue)
+        return self.response.write(_page)
+
+
+class ApiUpdateClassHandler(BaseHandler):
+    def post(self):
+        _key=Utility.getSafeKey(self.request.get("key"))
+        _author=self.request.get('author')
+        _userKey=getUser(self)
+        logging.info('the user key is '+_userKey)
+        _name=self.request.get("name")
+        returnObject={
+            'affair':'Update Class Content',
+            'success':False,
+            'className':'',
+            'description':''
+        }
+        #necessary parameters checking
+        if _key=='':
+            returnObject['description']='missing parameter:key'
+            return self.response.write(json.encode(returnObject))
+        
+        #determine class name and book key
+        _updatee=db.get(_key)
+        _className=''
+        _bookKey=''
+        if not _updatee.get(className):
+            _className='book'
+            _bookKey=str(_updatee.key())
+        else:
+            _className=_updatee.className
+            _bookKey=_updatee.bookKey
+        returnObject['className']=_className
+
+        #get purview string
+        _purview=Utility.getPurview(_bookKey,_userKey).lower()
+
+        #purview checking
+        if not checkPurview(_purview):
+            returnObject['description']='invalid purview, please make sure you are the owner or the co-editor of the book'
+            return self.response.write(json.encode(returnObject))
+        
+        ##main code
+
+        #extract meta info
+        _metaInfo=json.decode(_updatee.metaInfo)
+
+        #modify object
+        if _className.lower()=='book':
+            if _name:
+                _updatee.name=_name
+                _metaInfo.modifyTime=str(datetime.datetime.now())
+            if _author:
+                _metaInfo.author=_author
+                _metaInfo.modifyTime=str(datetime.datetime.now())
+            updatee.metaInfo=json.encode(_metaInfo)
+            _updatee.put()
+        else:
+            if _name:
+                _updatee.name=_name
+                _metaInfo.modifyTime=str(datetime.datetime.now())
+            updatee.metaInfo=json.encode(_metaInfo)
+            _updatee.put()
+        returnObject['success']=True
+        returnObject.update(to_dict(_updatee))
+        returnObject['key']=_key
+        return self.response.write(json.encode(returnObject))
+
+class ApiDeleteClassHandler(BaseHandler):
+    def post(self):
+        _key=Utility.getSafeKey(self.request.get("key"))
+        _isRecursively=self.request.get("isRecursively")
+        _userKey=getUser(self)
+        logging.info('the user key is '+_userKey)
+        returnObject={
+            'affair':'Delete Class',
+            'success':False,
+            'className':'',
+            'description':''
+        }
+        _deleteList=[]
+        _deleteList.append(_key)
+        #necessary parameters checking
+        if _key=='':
+            returnObject['description']='missing parameter:key'
+            return self.response.write(json.encode(returnObject))
+        
+        #determine class name and book key
+        _deletee=db.get(_key)
+
+        #checking if the key provided is valid
+        if not _deletee:
+            returnObject['description']='incorrect key!'
+            return self.response.write(json.encode(returnObject))
+        _className=''
+        _bookKey=''
+        if not to_dict(_deletee).get("className"):
+            _className='book'
+            _bookKey=str(_deletee.key())
+        else:
+            _className=_deletee.className.lower()
+            _bookKey=_deletee.bookKey
+        returnObject['className']=_className
+
+        #get purview string
+        _purview=Utility.getPurview(_bookKey,_userKey).lower()
+
+        #purview checking
+        if not checkPurview(_purview):
+            returnObject['description']='invalid purview, please make sure you are the owner or the co-editor of the book'
+            return self.response.write(json.encode(returnObject))
+        
+        ##main code
+        if _isRecursively and str(_isRecursively).lower()=='true':
+            returnObject['isRecursively']=True
+            _i=0
+            _paragraphList=[]
+            while _i < len(_deleteList):
+                _directChildren=db.Query(CS_Class).filter('parentKey =',_deleteList[_i]).fetch(65535)
+                for _child in _directChildren:
+                    _deleteList.append(str(_child.key()))
+                __directParagraph=db.Query(CS_Class).filter('parentKey =',_deleteList[_i]).fetch(65535)
+                for _child in __directParagraph:
+                    _paragraphList.append(str(_child.key()))
+                _i+=1
+            _deleteList.extend(_paragraphList)
+            for _each in _deleteList[1:]:
+                _child=db.get(_each)
+                if _child:
+                    _child.delete()
+
+
+        if _className=='book':
+            #delete related entries in the bookuser diagram
+            _purviews=db.Query(CS_BookUser).filter('bookKey =',_key).fetch(65535)
+            for _each in _purviews:
+                _each.delete()
+            #delete the entry
+            _deletee.delete()
+        else:
+            #repair linkage
+            if hasattr(_deletee,'previous') and _deletee.previous!='' and db.get(_deletee.previous):
+                logging.info("deleting.book-.previous+.")
+                _previous=db.get(_deletee.previous)
+                if hasattr(_deletee,'next') and _deletee.next!='' and db.get(_deletee.next):
+                    logging.info('next+')
+                    _next=db.get(_deletee.next)
+                    _previous.next=_deletee.next
+                    _previous.put()
+                    _next.previous=''
+                    _next.previous=str(_deletee.previous)
+                    logging.info(str(_next.put()))
+                    _next.put()
+                    logging.info(_next.previous)
+                else:
+                    logging.info('next-')
+                    _previous.next=''
+                    _previous.put()
+            elif hasattr(_deletee,'next') and _deletee.next!='' and db.get(_deletee.next):
+                logging.info('deleting,previous-,next+')
+                _next=db.get(_deletee.next)
+                _next.previous=''
+                _next.put()
+                _next.put()
+            #update affected entries
+            _affected=db.Query(CS_Class).filter('parentKey =',_deletee.parentKey).filter('order >', _deletee.order).fetch(65535)
+            for _each in _affected:
+                _each.order-=1
+                _each.put()
+            #delete the entry
+            _deletee.delete()
+        returnObject['success']=True
+        return self.response.write(json.encode(returnObject))
+
+class SiteParagraphHandler(BaseHandler):
+    def get(self):
+        _parentKey=Utility.getSafeKey(self.request.get('parentKey'))
+        _bookKey=getBookKey(_parentKey)
+        result=db.GqlQuery("SELECT * FROM CS_Paragraph WHERE parentKey='"+_parentKey+"' ORDER BY order ASC").fetch(100000)
+        _node=CS_Class.get(_parentKey)
+        _templateValue={
+                          'result':result,
+                          'bookKey':_bookKey,
+                          'node':json.encode(to_dict(_node)),
+                          }
+        _user=getUser(self)
+        if _user!='':
+            _templateValue['user']=json.encode(to_dict(CS_User.get(_user)))
+            _templateValue['username']=CS_User.get(_user).username
+        else:
+            pass
+        _page=jinja_environment.get_template('header.html').render()
+        _page+=jinja_environment.get_template('title.html').render()
+        _page+=jinja_environment.get_template('banner.html').render(_templateValue)
+        _page+=jinja_environment.get_template('newContent.html').render(_templateValue)
+        _page+=jinja_environment.get_template('fullScreenWrapper.html').render(_templateValue)
+        _page+=jinja_environment.get_template('toolButtonWrapper.html').render(_templateValue)
+
+        return self.response.write(_page)      
+
+class UploadPartHandler(BaseHandler):
+    def post(self):
+        _str=self.request.get("data")
+        _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
+        _bookKey=getBookKey(_parentKey)
+        _userKey=getUser(self)
+        _temp=CS_Temp(data=_str).put()
+        taskqueue.add(url='/background/upload/part/',
+            params={
+            "dataKey":str(_temp),
+            "parentKey":_parentKey,
+            "userKey":_userKey
+            },
+            target='1.DBWorker')
+        return self.response.write("1")
+
+
+class BackgroundUploadPartHandler(BaseHandler):
+    def post(self):
+        _dataKey=self.request.get("dataKey")
+        _str=db.get(_dataKey).data
+        _parentKey=Utility.getSafeKey(self.request.get("parentKey"))
+        _bookKey=getBookKey(_parentKey)
+        _userKey=self.request.get("_userKey")
+        _purview=Utility.getPurview(_bookKey, _userKey)
+        if(checkPurview(_purview)):
+            _s={}
+            _currentChapterO=0
+            _q=db.GqlQuery("SELECT * FROM CS_Class WHERE className='chapter' AND parentKey='"+_parentKey+"' ORDER BY order DESC LIMIT 1")
+            if (_q.count()>0):
+                _s['currentC']=_q.get()
+                _currentChapterO=_s.get('currentC').order
+            _currentNodeO=0
+            _currentParagraphO=0
+            result=re.search(r"<(?P<pattern>.*?)>(.*?)</(?P=pattern)>",\
+                _str,re.U and re.L and re.S)
+            while (result):
+                if (result.group(1)=="chapter"):
+                    if (_currentChapterO==0):
+                        _new=CS_Class(order=_currentChapterO+1,
+                        parentKey=_parentKey,
+                        name=result.group(2),
+                        previous="",
+                        bookKey=_bookKey,
+                        className="chapter",
+                        level=str(DataScheme['Class']['Chapter']['level']))
+                        _new.put()
+                    else:
+                        _new=CS_Class(order=_currentChapterO+1,
+                            parentKey=_parentKey,
+                            name=result.group(2),
+                            previous=str(_s.get('currentC').key()),
+                            bookKey=_bookKey,
+                            className="chapter",
+                            level=str(DataScheme['Class']['Chapter']['level']))
+                        _new.put()
+                        _s.get('currentC').next=str(_new.key())
+                        _s.get('currentC').put()
+                    _currentChapterO+=1
+                    _currentNodeO=0
+                    _currentParagraphO=0
+                    
+                    _s['currentC']=_new
+                elif (result.group(1)=="node"):
+                    if (_currentNodeO==0):
+                        _new=CS_Class(order=_currentNodeO+1,\
+                            parentKey=str(_s.get('currentC').key()),\
+                            name=result.group(2),\
+                            previous="",\
+                            bookKey=_bookKey,
+                            className="node",
+                            level=str(DataScheme['Class']['Node']['level']))
+                        _new.put()
+                        
+                    else:
+                        _new=CS_Class(order=_currentNodeO+1,
+                            parentKey=str(_s.get('currentC').key()),
+                            name=result.group(2),
+                            previous=str(_s.get('currentN').key()),
+                            bookKey=_bookKey,
+                            className="node",
+                            level=str(DataScheme['Class']['Node']['level']))
+                        _new.put()
+                        _s.get('currentN').next=str(_new.key())
+                        _s.get('currentN').put()
+                    _s['currentN']=_new
+                    _currentNodeO+=1
+                    _currentParagraphO=0
+                elif(result.group(1)=="p"):
+                    if (_currentParagraphO==0):
+                        _new=CS_Paragraph(order=_currentParagraphO+1,\
+                            parentKey=str(_s.get('currentN').key()),\
+                            content=result.group(2),\
+                            previous="",\
+                            bookKey=_bookKey)
+                        _new.put()
+                        
+                    else:
+                        _new=CS_Paragraph(order=_currentParagraphO+1,\
+                            parentKey=str(_s.get('currentN').key()),\
+                            content=result.group(2),\
+                            previous=str(_s.get('currentP').key()),\
+                            bookKey=_bookKey)
+                        _new.put()
+                        _s.get('currentP').next=str(_new.key())
+                        _s.get('currentP').put()
+                    _s['currentP']=_new
+                    _currentParagraphO+=1
+                _str=_str[result.end():]
+                result=re.search(r"<(?P<pattern>.*?)>(.*?)</(?P=pattern)>",\
+                _str,re.U and re.L and re.S)
+
+
                           
 config = {}
 config['webapp2_extras.sessions'] = {
@@ -686,6 +1188,14 @@ app = webapp2.WSGIApplication([
     (r'/logout/user/*',LogoutHandler),
     (r'/login/user/*',LoginHandler),
     (r'/check/login/*',LoginTestHandler),
+    (r'/get/class/*',ApiGetClassHandler),#api handler for volumes,chapters,parts,etc
+    (r'/add/class/*',ApiAddClassHandler),
+    (r'/delete/class/*',ApiDeleteClassHandler),
+    (r'/update/class/*',ApiUpdateClassHandler),
+    (r'/page/*',SitePageHandler),
+    (r'/upload/part/*',UploadPartHandler),
+    (r'/background/upload/part/*',BackgroundUploadPartHandler),
+    (r'/paragraph/*',SiteParagraphHandler),
     ('/create/tao',NewUserHandler),
     ('/check/1',CheckUsersHandler),
     ('/test/',TestHandler),
