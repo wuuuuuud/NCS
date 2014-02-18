@@ -1,0 +1,122 @@
+﻿.content
+{
+	
+	
+	font-family:'Microsoft YaHei',Consolas;
+	font-size:18px;
+	background-color:lightyellow;
+	//top: 2em;
+	//position:absolute
+}
+.container-fluid
+{
+	top: 3em;
+	position:relative;
+	
+}
+.content p::selection
+{
+	background-color:yellow
+	
+}
+.navigateBar
+{
+	position:fixed;
+	width:96%;
+	background-color:rgba(20,20,255,0.7);
+	color:white;
+	padding-left:2%;
+	padding-right:2%;
+	font-size:24px;
+	height:1.5em;
+	vertical-align:baseline;
+
+}
+	.navigateBar a:link
+	{
+		color:white;
+	}	
+	.navigateBar a:visited
+	{
+		color:white;
+	}
+	.navigateBar span
+	{
+		position:relative;
+		top:30%;
+	}
+.middle-wrapper
+{
+	display:table;
+	margin:0 auto;
+}
+.commentBox
+{
+	
+	word-break:break-all;
+	#opacity:0.6;
+	margin:2px 0 2px 0;
+}
+#newCommentBox
+{
+	background-color:rgba(255,30,30,0.75);
+	border: none;
+	position:absolute;
+}
+.sideBar
+{
+	position:relative;
+}
+.content p
+{
+	text-indent: 2em;
+	white-space: normal;
+	padding:0em 2em 0em 2em;
+	word-break:break-all;
+}
+
+.hidden
+{
+	visibility: hidden;
+}
+
+.marker
+{
+	
+}
+
+.delete
+{
+	float: right;
+}
+
+.update
+{
+	float: right;
+}
+.highlighter
+{
+	position:absolute;
+	border: none;
+	pointer-events:none;
+
+
+}
+.indicator
+{
+	height:2px;
+	width:0.3em;
+	vertical-align:top;
+	background-color:red;
+	visibility:visible;
+	position:absolute;
+	pointer-events:none;
+}
+
+.screenWideBox
+{
+	position:fixed;
+	top:30%;
+	left:auto;
+	right:auto;
+}
