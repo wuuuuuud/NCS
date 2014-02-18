@@ -1,0 +1,4 @@
+backends:
+- name: dbworker
+  class: B2
+  options: dynamic

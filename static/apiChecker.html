@@ -1,0 +1,52 @@
+<html>
+<head>
+<script src="../static/script/jquery.1.9.js"></script>
+<style>
+.wide
+{
+	width:500
+}
+</style>
+<script type="text/javascript">
+	function fsubmit()
+	{
+		requestData=$(form).serialize()
+		var ajaxRequest = $.ajax({
+        "url": furl.value,
+        "method": fmethod.value,
+        "data": requestData,
+    })
+        .done(function (data) {
+            //alert("success!");
+            //alert(data);
+            logging.innerHTML = data;
+
+        })
+        .fail(function (data) { 
+        	alert("failed");
+        	logging.innerHTML = data; 
+        });
+	}
+</script>
+</head>
+<body>
+<form method="post" id="form">
+parent key<input class="wide" type="text" name="parentKey"/><br/>
+book key<input class="wide" type="text" name="bookKey"/><br/>
+name<input class="wide" type="text" name="name"/><br/>
+author<input class="wide" type="text" name="author"/><br/>
+class name:<input class="wide" type="text" name="className"/><br/>
+order<input class="wide" type="text" name="order"/><br/>
+style<input class="wide" type="text" name="style"/><br/>
+data<textarea class="wide"name="data"></textarea><br/>
+key<input class="wide" type="text" name="key"/><br/>
+user secret<input class="wide" type="text" name="secret"/><br/>
+isRecursively<input class="wide" type="text" name="isRecursively"/><br/>
+<input type="button" onclick="fsubmit();" value="submit"/>
+
+</form>
+url:<input type="text" id='furl'/><br/>
+method:<input type="text" id="fmethod" /><br/>
+<div id="logging"></div>
+</body> 
+<html>

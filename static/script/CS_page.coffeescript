@@ -1,0 +1,283 @@
+logs = ''
+activeForm = null
+listInfo = {}
+states = {}
+
+classSequence = ['root','book','series','volume','part','chapter','node','paragraph']
+generateNavigator = () ->
+
+loginRoutine = () ->
+	
+pageInitialize = () ->
+	logging 'pageInitialize\r\n'
+	if $('#listWrapper').length > 0
+		listInitialize($.parseJSON data.innerHTML)
+		$("#listWrapper").delegate ".name", "click",(event) ->
+			if (listInfo.className=="chapter")
+				return window.open('/paragraph/?parentKey='+this.parentNode.id,"_self","")
+
+			fullScreenBlock "加载中..."
+			ajaxRequest = $.ajax({
+        		"url": "/get/class",
+        		"method": "POST",
+        		"data": "key="+this.parentNode.id,
+    		})
+        	.done((returnData) ->
+        		listInitialize($.parseJSON returnData)
+        		data.innerHTML = returnData)
+        	.fail(() ->
+        		alert "failed")
+			.always(() -> 
+				fullScreenUnblock())
+
+		$("#classReturnButton").bind "click",(event) ->
+			fullScreenBlock "加载中..."
+			listData=$.parseJSON(data.innerHTML)
+			ajaxRequest = $.ajax({
+				"url": "/get/class",
+				"method": "POST",
+				"data": "key="+if listData.className=="book" then "" else listData.self.parentKey,
+			})
+				.done((returnData) ->
+					listInitialize($.parseJSON returnData)
+					data.innerHTML = returnData)
+				.fail(() ->
+					alert "failed" )
+				.always(() -> 
+					fullScreenUnblock())
+		
+		$("#uploadPartButton").bind "click", (event) ->
+			$(fullScreenWrapper).css "visibility","visible"
+			switchFormTo(uploadPartForm)
+	else if $("#content").length > 0
+		listInfo=$.parseJSON(listData.innerHTML)
+		$("#toolButtonWrapper > .btn").css "display","none"
+		$(scrollUpButton).css "display", "inline"
+		$(editParagraphButton).css "display", "inline"
+		$(toggleAllCommentButton).css "display", "inline"
+		$(classReturnButton).css "display", "inline"
+		
+		if listInfo.next !=''
+			$(nextButton).css 'display', "inline"
+			$(nextButton).bind "click", () ->
+				window.open "/paragraph?parentKey="+listInfo.next,"_self", ""
+
+		if listInfo.previous !=''
+			$(previousButton).css 'display', "inline"
+			$(previousButton).bind "click", () -> 
+				window.open "/paragraph?parentKey="+listInfo.previous,"_self", ""
+
+		$(toggleAllCommentButton).bind "click", () ->
+			commentList.forEach (value) ->
+				showComment value
+
+		$(editParagraphButton).bind "click", () ->
+			if states['editMode'] == true
+				states['editMode'] = false
+				$("#content").undelegate "p", "click"
+				editParagraphButton.innerHTML='EDIT PARAGRAPH'
+			else 
+				states['editMode'] = true
+				editParagraphButton.innerHTML='EXIT EDIT PARAGRAPH'
+				$("#content").delegate "p", "click", (event) ->
+					$(UpdateParagraphDiv).css 'visibility', 'visible'
+					$(UpdateParagraphDiv).css 'top', 200 + window.scrollY + 'px'
+					UpdateParagraphForm.key.value=this.id
+					UpdateParagraphForm.content.value=this.innerHTML
+					
+		$(classReturnButton).bind "click", () ->
+			window.open "/page?key="+listInfo.parentKey,"_self", ""
+
+listInitialize = (listData) ->
+	listInfo=listData
+	logging 'listInitialize\r\n'
+	$('#listWrapper > .class-entry').remove()
+	for value in listData.data
+		div = $("#listEntryPrototype").clone true
+		div.css "display", "block"
+		div.css "visibility", "visible"
+		div[0].id = value.key
+		div[0].innerHTML = '<span class="name">'+ value.name + '</span>'
+		div.appendTo $("#listWrapper")[0]
+	if listData.self?
+		$(classReturnButton).css "display","inline"
+	else
+		$(classReturnButton).css "display","none"
+	addClassEntryForm.className.value = classSequence[classSequence.indexOf(listInfo.className)+1]
+	addClassEntryForm.parentKey.value = if listData.self? then listData.self.key else ''
+	uploadPartForm.parentKey.value = if listData.self? and listInfo.className == "part" then listData.self.key else ''
+	navigateBar.innerHTML=listInfo.className+" "+if listInfo.self? then listInfo.self.name else '' 
+	$(uploadPartButton).css "display", if listInfo.className == "part" then "inline" else "none"
+
+
+userInitialize = () ->
+	$(loginText).bind "click",() ->
+		$(fullScreenWrapper).css "visibility","visible"
+		switchFormTo(loginForm)
+
+	$(registerText).bind "click",() ->
+		$(fullScreenWrapper).css "visibility","visible"
+		switchFormTo(registerForm)
+
+	$(logoutText).bind "click",() ->
+		fullScreenBlock "登出中..."
+		$.ajax({
+        		"url": "/logout/user",
+        		"method": "GET",
+        		"data": "",
+    		})
+        	.done((returnData) ->
+        		userInfo=$.parseJSON(returnData)
+        		if userInfo.success
+        			$(loggedText).css "display","none"
+        			$(notLoggedText).css "display","inline"
+        		)
+        	.fail(() ->
+        		alert "failed")
+			.always(() -> 
+				fullScreenUnblock())
+
+switchFormTo = (formId) ->
+	$("#submitForm form").css "display","none"
+	$(formId).css "display","block"
+	activeForm=formId
+
+formInitialize = () ->
+	$(submitButton).bind "click",() ->
+		if activeForm==loginForm
+			loginRoutine()
+		else if activeForm==registerForm
+			registerRoutine()
+		else if activeForm == addClassEntryForm
+			addClassEntryRoutine()
+		else if activeForm == uploadPartForm
+			uploadPartRoutine()
+
+loginRoutine = () ->
+	fullScreenBlock "登陆中..."
+	$.ajax({
+		"url": "/login/user/",
+		"method": "POST",
+		"data": $(loginForm).serialize(),
+	})
+		.done((returnData) ->
+			userInfo=$.parseJSON(returnData)
+			if userInfo.success
+				$(loggedText).css "display","inline"
+				$(notLoggedText).css "display","none"
+				userNameText.innerHTML = userInfo.username
+				if AddComment?
+					AddComment.user.value=userInfo.key
+				$(fullScreenWrapper).css "visibility","hidden"
+			else
+				alert "大概哪里出错了..."
+			)
+		.fail(() ->
+			alert "failed")
+		.always(() -> 
+			fullScreenUnblock())
+
+registerRoutine = () ->
+	if registerForm.password.value!=registerForm.passwordCheck.value
+		return alert "呃,两次密码输入不同。"
+	fullScreenBlock "注册中..."
+	$.ajax({
+		"url": "/register/user/",
+		"method": "POST",
+		"data": $(registerForm).serialize(),
+	})
+		.done((returnData) ->
+			userInfo=$.parseJSON(returnData)
+			if userInfo.success
+				$(loggedText).css "display","inline"
+				$(notLoggedText).css "display","none"
+				userNameText.innerHTML = userInfo.username
+				$(fullScreenWrapper).css "visibility","hidden"
+			else
+				alert "大概哪里出错了..."
+			)
+		.fail(() ->
+			alert "failed")
+		.always(() -> 
+			fullScreenUnblock())
+
+editInitialize = () ->
+	$(classEntryAddButton).bind "click",()->
+		$(fullScreenWrapper).css "visibility","visible"
+		switchFormTo(addClassEntryForm)
+	$(refreshButton).bind "click", () ->
+		refreshRoutine()
+	$(toggleAllCommentButton).bind "click",() ->
+		return
+
+addClassEntryRoutine = () ->
+	fullScreenBlock "添加中..."
+	$.ajax({
+		"url": "/add/class/",
+		"method": "POST",
+		"data": $(addClassEntryForm).serialize(),
+		})
+		.done((returnData) ->
+			classInfo=$.parseJSON(returnData)
+			if classInfo.success
+				listInfo.data.push(classInfo.self)
+				listInitialize(listInfo)
+				$(fullScreenWrapper).css "visibility","hidden"
+			else
+				alert "大概哪里出错了..."
+			)
+		.fail(() ->
+			alert "failed")
+		.always(() -> 
+			fullScreenUnblock())
+
+uploadPartRoutine = () ->
+	fullScreenBlock "上传中..."
+	$.ajax({
+		"url": "/upload/part/",
+		"method": "POST",
+		"data": $(uploadPartForm).serialize(),
+		})
+		.done((returnData) ->
+			alert "似乎成功了..."
+			)
+		.fail(() ->
+			alert "failed")
+		.always(() -> 
+			fullScreenUnblock())
+
+refreshRoutine = () ->
+	fullScreenBlock "刷新中..."
+	ajaxRequest = $.ajax({
+		"url": "/get/class",
+		"method": "POST",
+		"data": "key="+if listInfo.className=="root" then "" else listInfo.self.key,
+	})
+		.done((returnData) ->
+			listInitialize($.parseJSON returnData)
+			data.innerHTML = returnData)
+		.fail(() ->
+        	alert "failed" )
+		.always(() -> 
+			fullScreenUnblock())
+
+
+logging = (text) ->
+	logs += text
+
+#block the screen to wait a async request to return
+fullScreenBlock = (indicatingText) ->
+	$(fullScreenBlocker).css "visibility", "visible"
+	fullScreenIndicator.innerHTML = indicatingText
+
+#unblock
+fullScreenUnblock = () ->
+	$(fullScreenBlocker).css "visibility", "hidden"
+
+
+$ =>
+	pageInitialize()
+	userInitialize()
+	editInitialize()
+	formInitialize()
+

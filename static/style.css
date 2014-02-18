@@ -1,0 +1,167 @@
+﻿.content
+{
+	
+	
+	font-family:'Microsoft YaHei',Consolas;
+	font-size:18px;
+	background-color:lightyellow;
+	//top: 2em;
+	//position:absolute
+}
+.container-fluid
+{
+	top: 160px;
+	position:relative;
+	
+}
+.content p::selection
+{
+	background-color:yellow
+	
+}
+.navigateBar
+{
+	position:fixed;
+	width:96%;
+	background-color:rgba(20,20,255,0.7);
+	color:white;
+	padding-left:2%;
+	padding-right:2%;
+	font-size:24px;
+	height:1.5em;
+	vertical-align:baseline;
+
+}
+	.navigateBar a:link
+	{
+		color:white;
+	}	
+	.navigateBar a:visited
+	{
+		color:white;
+	}
+	.navigateBar span
+	{
+		position:relative;
+		top:30%;
+	}
+.middle-wrapper
+{
+	display:table;
+	margin:0 auto;
+}
+.commentBox
+{
+	
+	word-break:break-all;
+	#opacity:0.6;
+	margin:2px 0 2px 0;
+}
+#newCommentBox
+{
+	background-color:rgba(255,30,30,0.75);
+	border: none;
+	position:absolute;
+}
+.sideBar
+{
+	position:relative;
+}
+.content p
+{
+	text-indent: 2em;
+	white-space: normal;
+	padding:0em 2em 0em 2em;
+	word-break:break-all;
+}
+
+.hidden
+{
+	visibility: hidden;
+}
+
+.marker
+{
+	
+}
+
+.delete
+{
+	float: right;
+}
+
+.update
+{
+	float: right;
+}
+.highlighter
+{
+	position:absolute;
+	border: none;
+	pointer-events:none;
+
+
+}
+.indicator
+{
+	height:2px;
+	width:0.3em;
+	vertical-align:top;
+	background-color:red;
+	visibility:visible;
+	position:absolute;
+	pointer-events:none;
+}
+
+.screenWideBox
+{
+	position:fixed;
+	top:30%;
+	left:auto;
+	right:auto;
+}
+
+.class-entry
+{
+
+    margin-left: 10%;
+    margin-right: 10%;
+    margin-top: 0.4em;
+    margin-bottom: 0.4em;
+    background-color: lightblue;
+    font-size: 2em;
+    line-height: normal;
+
+}
+
+.classEntryAddButton
+{
+	font-size:35px;
+}
+.toolButtonWrapper
+{
+	position:fixed;
+	left:80%;
+	top:60%;
+	width:150px;
+}
+.fullScreenWrapper
+{
+	position: fixed;
+	width:100%;
+	height:100%;
+	top:0px;
+	left:0px;
+	background-color: rgba(200,200,200,0.5);
+	z-index: 20;
+
+}
+.submitForm
+{
+	position:absolute;
+	width: 50%;
+	left:25%;
+	top:30%;
+	border:solid 1px skyblue;
+
+}

@@ -1,0 +1,36 @@
+
+<div class="fullScreenWrapper" id="fullScreenWrapper" style="visibility:hidden">
+	<div class="submitForm" id="submitForm" style="background-color:lightyellow">
+		<form id="loginForm" style="display:block">
+			用户名:<input type="text" name="username"/><br/>
+			密码:<input type="password" name="password"/><br/>
+		</form>
+		<form id="registerForm" style="display:none">
+			用户名:<input type="text" name="username"/><br/>
+			密码:<input type="password" name="passwordCheck"/><br/>
+			请再次确认密码:<input type="password" name="password"/><br/>
+			电子邮件:<input type="text" name="email"/><br/>
+		</form>
+		<form id="addClassEntryForm" style="display:none">
+			名称:<input type="text" name="name"/><br/>
+			<span id="bookSpecifiedContent">
+				作者:<input type="password" name="author"/><br/>
+			</span>
+			类型:<input type="text" name="className" value=""/><br/>
+			<input type="hidden" name="parentKey" />
+
+		</form>
+		<form id="uploadPartForm" style="display:none">
+			内容:<textarea name="data"></textarea> <br/>
+			<input type="hidden" name="parentKey" />
+
+		</form>
+		<input class="btn" type="button" value="提交" id="submitButton"/>&nbsp;&nbsp;&nbsp;&nbsp;
+		<input class="btn" type="button" value="关闭" onclick="this.parentNode.parentNode.style.visibility='hidden'"/>
+	</div>
+</div>
+
+<div class="fullScreenWrapper" id="fullScreenBlocker" style="visibility:hidden">
+	<div id="fullScreenIndicator" style="position:absolute;left:20%;width:60%;top:40%;background-color:white">
+	</div>
+</div>

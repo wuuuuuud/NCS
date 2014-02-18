@@ -1,0 +1,51 @@
+<div class="full" style="width:100%">
+<div class="container-fluid">
+	<div class="row-fluid show-gird">
+		
+<div class="content span9" id="content">
+    {%- for r in result -%}
+    <p id="{{ r.key() }}">{{ r.content }}</p>
+    {%- endfor -%}
+</div>
+		
+
+
+		<div id="rightBar" class="sideBar rightBar span3"></div>
+	
+	
+	</div>
+    </div>
+    </div>
+<div style="visibility:hidden;position:fixed;right:0%;width:200px;height:200px;top:100px;border:solid 1px;z-index:91;word-break:break-all;">
+            <p id="indicator">test</p>
+
+</div>
+
+<div id="newCommentBox" style="visibility:hidden;">
+        <form id="AddComment">
+<input type="hidden" name="startNode"/>
+<input type="hidden" name="startOffset"/>
+<input type="hidden" name="endNode"/>
+<input type="hidden" name="endOffset"/>
+<input type="hidden" name="user"/>
+
+内容：<br /><textarea name="content" ></textarea><br/><span class="middle-wrapper">
+<input type="button" class="btn"value="提交" onclick="sendComment(this);"/>
+    <input type="button" class="btn btn-inverse"value="关闭" onclick="newCommentBox.style.visibility = 'hidden';" />
+                                                   </span>
+            <textarea name="relatedNodes" style="visibility:hidden;width:0px;height:0px"></textarea>
+</form>
+    </div>
+<div id="UpdateParagraphDiv" style="position:absolute;border:gold 3px solid;visibility:hidden">
+    <form id="UpdateParagraphForm" action="/update/paragraph/" method="post">
+        <input type="hidden" name="key" />
+        <input type="hidden" name="bookKey" value="{{ bookKey }}" />
+        <textarea style="width:300px;" name="content"></textarea><br/>
+        <span class="middle-wrapper">
+        <input type="button" class="btn" value="提交" onclick="updateParagraph(this);" />
+        <input type="button" class="btn btn-inverse"value="关闭" onclick="this.parentNode.parentNode.parentNode.style.visibility='hidden';" />
+            </span>
+    </form>
+</div>
+<div id="listData" style="display:none">{{ node }}</div>
+

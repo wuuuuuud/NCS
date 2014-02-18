@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "ParagraphDisplay.js",
+  "sourceRoot": "",
+  "sources": [
+    "ParagraphDisplay.coffeescript"
+  ],
+  "names": [],
+  "mappings": ";AAAA,IAAA,2BAAA;;AAAA,CAAA,EAAoB,MAAA,QAApB;;AAEA,CAFA,EAEe,MAAA,GAAf"
+}
