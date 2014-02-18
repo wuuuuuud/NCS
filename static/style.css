@@ -10,7 +10,7 @@
 }
 .container-fluid
 {
-	top: 160px;
+	top: 3em;
 	position:relative;
 	
 }
@@ -119,49 +119,4 @@
 	top:30%;
 	left:auto;
 	right:auto;
-}
-
-.class-entry
-{
-
-    margin-left: 10%;
-    margin-right: 10%;
-    margin-top: 0.4em;
-    margin-bottom: 0.4em;
-    background-color: lightblue;
-    font-size: 2em;
-    line-height: normal;
-
-}
-
-.classEntryAddButton
-{
-	font-size:35px;
-}
-.toolButtonWrapper
-{
-	position:fixed;
-	left:80%;
-	top:60%;
-	width:150px;
-}
-.fullScreenWrapper
-{
-	position: fixed;
-	width:100%;
-	height:100%;
-	top:0px;
-	left:0px;
-	background-color: rgba(200,200,200,0.5);
-	z-index: 20;
-
-}
-.submitForm
-{
-	position:absolute;
-	width: 50%;
-	left:25%;
-	top:30%;
-	border:solid 1px skyblue;
-
 }

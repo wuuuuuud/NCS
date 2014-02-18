@@ -33,29 +33,6 @@ indexes:
   - name: order
     direction: desc
 
-- kind: CS_Class
-  properties:
-  - name: className
-  - name: parentKey
-  - name: order
-    direction: desc
-
-- kind: CS_Class
-  properties:
-  - name: parentKey
-  - name: name
-
-- kind: CS_Class
-  properties:
-  - name: parentKey
-  - name: order
-
-- kind: CS_Class
-  properties:
-  - name: parentKey
-  - name: order
-    direction: desc
-
 - kind: CS_Node
   properties:
   - name: parentKey
