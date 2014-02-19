@@ -19,6 +19,8 @@ loginRoutine = function() {};
 pageInitialize = function() {
   logging('pageInitialize\r\n');
   if ($('#listWrapper').length > 0) {
+    $("#toolButtonWrapper > .btn").css("display", "none");
+    $(refreshButton).css("display", "block");
     listInitialize($.parseJSON(data.innerHTML));
     $("#listWrapper").delegate(".name", "click", function(event) {
       var ajaxRequest;
@@ -63,10 +65,10 @@ pageInitialize = function() {
   } else if ($("#content").length > 0) {
     listInfo = $.parseJSON(listData.innerHTML);
     $("#toolButtonWrapper > .btn").css("display", "none");
-    $(scrollUpButton).css("display", "inline");
-    $(editParagraphButton).css("display", "inline");
-    $(toggleAllCommentButton).css("display", "inline");
-    $(classReturnButton).css("display", "inline");
+    $(scrollUpButton).css("display", "block");
+    $(editParagraphButton).css("display", "block");
+    $(toggleAllCommentButton).css("display", "block");
+    $(classReturnButton).css("display", "block");
     if (listInfo.next !== '') {
       $(nextButton).css('display', "inline");
       $(nextButton).bind("click", function() {
@@ -122,7 +124,7 @@ listInitialize = function(listData) {
     div.appendTo($("#listWrapper")[0]);
   }
   if (listData.self != null) {
-    $(classReturnButton).css("display", "inline");
+    $(classReturnButton).css("display", "block");
   } else {
     $(classReturnButton).css("display", "none");
   }
@@ -130,7 +132,7 @@ listInitialize = function(listData) {
   addClassEntryForm.parentKey.value = listData.self != null ? listData.self.key : '';
   uploadPartForm.parentKey.value = (listData.self != null) && listInfo.className === "part" ? listData.self.key : '';
   navigateBar.innerHTML = listInfo.className + " " + (listInfo.self != null ? listInfo.self.name : '');
-  return $(uploadPartButton).css("display", listInfo.className === "part" ? "inline" : "none");
+  return $(uploadPartButton).css("display", listInfo.className === "part" ? "block" : "none");
 };
 
 userInitialize = function() {

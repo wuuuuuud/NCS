@@ -11,7 +11,11 @@ loginRoutine = () ->
 pageInitialize = () ->
 	logging 'pageInitialize\r\n'
 	if $('#listWrapper').length > 0
+		$("#toolButtonWrapper > .btn").css "display","none"
+		$(refreshButton).css "display", "block"
+
 		listInitialize($.parseJSON data.innerHTML)
+		
 		$("#listWrapper").delegate ".name", "click",(event) ->
 			if (listInfo.className=="chapter")
 				return window.open('/paragraph/?parentKey='+this.parentNode.id,"_self","")
@@ -52,10 +56,10 @@ pageInitialize = () ->
 	else if $("#content").length > 0
 		listInfo=$.parseJSON(listData.innerHTML)
 		$("#toolButtonWrapper > .btn").css "display","none"
-		$(scrollUpButton).css "display", "inline"
-		$(editParagraphButton).css "display", "inline"
-		$(toggleAllCommentButton).css "display", "inline"
-		$(classReturnButton).css "display", "inline"
+		$(scrollUpButton).css "display", "block"
+		$(editParagraphButton).css "display", "block"
+		$(toggleAllCommentButton).css "display", "block"
+		$(classReturnButton).css "display", "block"
 		
 		if listInfo.next !=''
 			$(nextButton).css 'display', "inline"
@@ -100,14 +104,14 @@ listInitialize = (listData) ->
 		div[0].innerHTML = '<span class="name">'+ value.name + '</span>'
 		div.appendTo $("#listWrapper")[0]
 	if listData.self?
-		$(classReturnButton).css "display","inline"
+		$(classReturnButton).css "display","block"
 	else
 		$(classReturnButton).css "display","none"
 	addClassEntryForm.className.value = classSequence[classSequence.indexOf(listInfo.className)+1]
 	addClassEntryForm.parentKey.value = if listData.self? then listData.self.key else ''
 	uploadPartForm.parentKey.value = if listData.self? and listInfo.className == "part" then listData.self.key else ''
 	navigateBar.innerHTML=listInfo.className+" "+if listInfo.self? then listInfo.self.name else '' 
-	$(uploadPartButton).css "display", if listInfo.className == "part" then "inline" else "none"
+	$(uploadPartButton).css "display", if listInfo.className == "part" then "block" else "none"
 
 
 userInitialize = () ->
