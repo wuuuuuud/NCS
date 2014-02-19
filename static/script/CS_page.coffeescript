@@ -2,6 +2,7 @@ logs = ''
 activeForm = null
 listInfo = {}
 states = {}
+activatedComments = []
 
 classSequence = ['root','book','series','volume','part','chapter','node','paragraph']
 generateNavigator = () ->
@@ -72,8 +73,13 @@ pageInitialize = () ->
 				window.open "/paragraph?parentKey="+listInfo.previous,"_self", ""
 
 		$(toggleAllCommentButton).bind "click", () ->
+			activatedComments = []
 			commentList.forEach (value) ->
+				hideComment value
+				if value["commentBox"] != undefined and value["commentBox"]!=null
+					value["commentBox"].remove()
 				showComment value
+			rearrangeCommentBoxes activatedComments
 
 		$(editParagraphButton).bind "click", () ->
 			if states['editMode'] == true
@@ -278,6 +284,29 @@ fullScreenBlock = (indicatingText) ->
 fullScreenUnblock = () ->
 	$(fullScreenBlocker).css "visibility", "hidden"
 
+#rearrange the commentboxes for better view
+rearrangeCommentBoxes = (_activatedComments) ->
+	(_comment['commentBoxHeight'] = INT(window.getComputedStyle(_comment['commentBox']).height)) for _comment in _activatedComments
+	(_comment['commentHighlighterTop'] = INT(window.getComputedStyle(_comment['beginning']).top)) for _comment in _activatedComments
+	(_comment['commentHighlighterLeft'] = INT(window.getComputedStyle(_comment['beginning']).left)) for _comment in _activatedComments
+	sortedCommentList=_activatedComments
+	sortedCommentList=sortedCommentList.sort((a,b) ->
+		if a['commentHighlighterTop'] > b['commentHighlighterTop']
+			return true
+		else if a['commentHighlighterTop'] == b['commentHighlighterTop']
+			return a['commentHighlighterLeft'] > b['commentHighlighterLeft']
+		else
+			return false
+			)
+	currentTop=0
+	wrapperOffset= 0 - INT(window.getComputedStyle($(".container-fluid")[0]).top)
+	for _comment in sortedCommentList
+		plannedTop=_comment['commentHighlighterTop'] + wrapperOffset
+		if currentTop > plannedTop
+			plannedTop = currentTop
+		$(_comment['commentBox']).css "top", plannedTop
+		currentTop = plannedTop + _comment['commentBoxHeight'] + 3
+		console.log currentTop
 
 $ =>
 	pageInitialize()

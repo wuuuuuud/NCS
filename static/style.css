@@ -56,6 +56,9 @@
 	word-break:break-all;
 	#opacity:0.6;
 	margin:2px 0 2px 0;
+	position:absolute;
+	right:1%;
+	width:200px;
 }
 #newCommentBox
 {
@@ -65,7 +68,7 @@
 }
 .sideBar
 {
-	position:relative;
+	;
 }
 .content p
 {

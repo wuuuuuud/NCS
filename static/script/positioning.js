@@ -753,7 +753,7 @@ function createCommentBox(commentObject)
 	relativePosition = getRelativePosition(commentObject);
 	commentObject["commentBox"] = document.createElement("DIV");
 	_tempBox = commentObject.commentBox;
-	_tempBox.className = "commentBox row-fluid";
+	_tempBox.className = "commentBox";
 	_tempBox.innerHTML = "<b>"+commentObject["username"] + "</b>:" + commentObject["content"];
 	_tempBox.setAttribute("relativePosition", relativePosition);
 	
