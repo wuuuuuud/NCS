@@ -92,6 +92,7 @@ pageInitialize = function() {
         }
         return showComment(value);
       });
+      rearrangeCommentBoxes(activatedComments);
       return rearrangeCommentBoxes(activatedComments);
     });
     $(editParagraphButton).bind("click", function() {
@@ -342,12 +343,16 @@ rearrangeCommentBoxes = function(_activatedComments) {
   }
   sortedCommentList = _activatedComments;
   sortedCommentList = sortedCommentList.sort(function(a, b) {
-    if (a['commentHighlighterTop'] > b['commentHighlighterTop']) {
-      return true;
+    if (a['commentHighlighterTop'] < b['commentHighlighterTop']) {
+      return -1;
     } else if (a['commentHighlighterTop'] === b['commentHighlighterTop']) {
-      return a['commentHighlighterLeft'] > b['commentHighlighterLeft'];
+      if (a['commentHighlighterLeft'] > b['commentHighlighterLeft']) {
+        return -1;
+      } else {
+        return 1;
+      }
     } else {
-      return false;
+      return 1;
     }
   });
   currentTop = 0;

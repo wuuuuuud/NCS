@@ -80,6 +80,7 @@ pageInitialize = () ->
 					value["commentBox"].remove()
 				showComment value
 			rearrangeCommentBoxes activatedComments
+			rearrangeCommentBoxes activatedComments
 
 		$(editParagraphButton).bind "click", () ->
 			if states['editMode'] == true
@@ -291,12 +292,12 @@ rearrangeCommentBoxes = (_activatedComments) ->
 	(_comment['commentHighlighterLeft'] = INT(window.getComputedStyle(_comment['beginning']).left)) for _comment in _activatedComments
 	sortedCommentList=_activatedComments
 	sortedCommentList=sortedCommentList.sort((a,b) ->
-		if a['commentHighlighterTop'] > b['commentHighlighterTop']
-			return true
+		if a['commentHighlighterTop'] < b['commentHighlighterTop']
+			return -1
 		else if a['commentHighlighterTop'] == b['commentHighlighterTop']
-			return a['commentHighlighterLeft'] > b['commentHighlighterLeft']
+			return if a['commentHighlighterLeft'] > b['commentHighlighterLeft'] then -1 else 1
 		else
-			return false
+			return 1
 			)
 	currentTop=0
 	wrapperOffset= 0 - INT(window.getComputedStyle($(".container-fluid")[0]).top)
