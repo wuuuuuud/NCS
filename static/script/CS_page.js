@@ -346,7 +346,7 @@ rearrangeCommentBoxes = function(_activatedComments) {
     if (a['commentHighlighterTop'] < b['commentHighlighterTop']) {
       return -1;
     } else if (a['commentHighlighterTop'] === b['commentHighlighterTop']) {
-      if (a['commentHighlighterLeft'] > b['commentHighlighterLeft']) {
+      if (a['commentHighlighterLeft'] < b['commentHighlighterLeft']) {
         return -1;
       } else {
         return 1;
