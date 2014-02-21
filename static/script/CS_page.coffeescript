@@ -72,6 +72,8 @@ pageInitialize = () ->
 			$(previousButton).bind "click", () -> 
 				window.open "/paragraph?parentKey="+listInfo.previous,"_self", ""
 
+
+		#toggle all comments button => click
 		$(toggleAllCommentButton).bind "click", () ->
 			activatedComments = []
 			if states['showCommentMode'] == 'interactive'

@@ -394,15 +394,22 @@ function onContentMouseMove(event)
                     }
                 }
             });
-            commentList.forEach(function (value, key) {
-            	if (activatedComments.indexOf(value) == -1) {
-            		hideComment(value);
-            		if (value["commentBox"] != undefined && value["commentBox"]!=null) {
-            		    $(value["commentBox"]).stop(true,true).slideUp(400, function () { this.remove();});//.style.visibility = "hidden";
-            			//value["commentBox"].remove();
-            		}
-            	}
-            })
+            if (states['showCommentMode'] == 'interactive')
+            {
+                commentList.forEach(function (value, key)
+                {
+                	if (activatedComments.indexOf(value) == -1) 
+                    {
+                		hideComment(value);
+                		if (value["commentBox"] != undefined && value["commentBox"]!=null)
+                        {
+                		    $(value["commentBox"]).stop(true,true).slideUp(400, function () { this.remove();});//.style.visibility = "hidden";
+                			//value["commentBox"].remove();
+                		}
+                	}
+                });
+
+            }
             //showCommentBoxes(activatedComments);
 
             $(indicator)[0].innerHTML += "<br />" + ((new Date()).valueOf() - timestamp) + "<br />"; //time
