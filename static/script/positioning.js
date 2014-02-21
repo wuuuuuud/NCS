@@ -701,7 +701,7 @@ function showCommentBox(commentObject){
 		}
 		if (!_inserted) leftBar.appendChild(_CB);
 	}
-	$(_CB).stop(true,true).slideDown(300);
+	$(_CB).stop(true,true).css ("visibility", "visible").css("line-height","initial").css("display","inline");
 
 
 }

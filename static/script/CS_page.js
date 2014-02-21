@@ -12,6 +12,8 @@ states = {};
 
 activatedComments = [];
 
+states['showCommentMode'] = 'interactive';
+
 classSequence = ['root', 'book', 'series', 'volume', 'part', 'chapter', 'node', 'paragraph'];
 
 generateNavigator = function() {};
@@ -85,15 +87,31 @@ pageInitialize = function() {
     }
     $(toggleAllCommentButton).bind("click", function() {
       activatedComments = [];
-      commentList.forEach(function(value) {
-        hideComment(value);
-        if (value["commentBox"] !== void 0 && value["commentBox"] !== null) {
-          value["commentBox"].remove();
-        }
-        return showComment(value);
-      });
-      rearrangeCommentBoxes(activatedComments);
-      return rearrangeCommentBoxes(activatedComments);
+      if (states['showCommentMode'] === 'interactive') {
+        states['showCommentMode'] = 'all';
+        this.innerHTML = "Comment: All";
+        commentList.forEach(function(value) {
+          hideComment(value);
+          if (value["commentBox"] !== void 0 && value["commentBox"] !== null) {
+            value["commentBox"].remove();
+          }
+          return showComment(value);
+        });
+        rearrangeCommentBoxes(activatedComments);
+        return rearrangeCommentBoxes(activatedComments);
+      } else if (states['showCommentMode'] === 'all') {
+        this.innerHTML = "Comment: None";
+        states['showCommentMode'] = 'none';
+        return commentList.forEach(function(value) {
+          hideComment(value);
+          if (value["commentBox"] !== void 0 && value["commentBox"] !== null) {
+            return value["commentBox"].remove();
+          }
+        });
+      } else {
+        this.innerHTML = "Comment: Interactive";
+        return states['showCommentMode'] = 'interactive';
+      }
     });
     $(editParagraphButton).bind("click", function() {
       if (states['editMode'] === true) {

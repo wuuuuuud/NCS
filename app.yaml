@@ -9,6 +9,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /robot\.txt
+  static_files: robot.txt
+  upload: robot\.txt
+
 - url: /static
   static_dir: static/
 
