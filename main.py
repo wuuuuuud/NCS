@@ -586,16 +586,24 @@ class ApiGetMultiplyCommentHandler(BaseHandler):
         _paragraphs=re.split("#_#",_plist)
         _comments=[]
         _result=[]
+        #store user info to reduce datebase reads
+        _userDict={}
         for _pKey in _paragraphs:
             _p=CS_Paragraph.get(_pKey)
             _comments+=_p.comments
         _comments=set(_comments)
         for _cKey in _comments:
             _comment=CS_Comment.get(_cKey)
-            _user=CS_User.get(_comment.userKey)
+            _userKey = _comment.userKey
+            if (_userDict.get(_userKey) == None):
+                _user=CS_User.get(_comment.userKey)
+                _username = _user.username
+                _userDict[_userKey]=to_dict(_user)
+            else:
+                _username = _userDict[_userKey]['username']
 
             _result.insert(0,to_dict(_comment))
-            _result[0]["username"]=_user.username
+            _result[0]["username"]=_username
         self.response.write(json.encode(_result))
 
 class UpdateParagraphHandler(BaseHandler):
