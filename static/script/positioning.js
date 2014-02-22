@@ -394,7 +394,7 @@ function onContentMouseMove(event)
                     }
                 }
             });
-            if (states['showCommentMode'] == 'interactive')
+            if (states['showCommentMode'] != 'all')
             {
                 commentList.forEach(function (value, key)
                 {
